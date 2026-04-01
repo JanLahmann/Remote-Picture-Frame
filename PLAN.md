@@ -36,14 +36,24 @@ WhatsApp ──→ Twilio ──→ IBM Cloud Function ──→ OneDrive       
 
 ## 2. Components
 
-### 2.1 OneDrive Shared Folder Structure
+### 2.1 OneDrive Shared Folder Structure & Isolation
+
+The family OneDrive is used for other purposes. To ensure family members uploading photos **never see other OneDrive content**, we use one of two isolation strategies:
+
+**Strategy A — Shared folder (simple)**:
+Create `/FamilyFrame/` in the main OneDrive and share *only that folder* with family members. They receive a "Shared with me" link and can only access this one folder. The rest of the OneDrive is invisible to them.
+
+**Strategy B — Dedicated account (strongest isolation, recommended)**:
+Create a free Microsoft account (e.g. `familyframe@outlook.com`) used exclusively for this app. It gets 5 GB free OneDrive storage — sufficient for thousands of photos. Family members share photos *into this account's folder*. Complete separation from any personal/family OneDrive data. The backend's Graph API app registration is scoped to this account only.
 
 ```
-/FamilyFrame/
-  /photos/                  ← all photos land here
+/FamilyFrame/                       ← shared with family (or in dedicated account)
+  /photos/                          ← all photos land here
   /config/
-    settings.json           ← slideshow settings, synced to display
+    settings.json                   ← slideshow settings, synced to display
 ```
+
+> **Note**: With Strategy B, the 5 GB limit can be extended by purchasing a standalone Microsoft 365 Basic plan (~€2/month for 100 GB) if needed later. For photos at ~3-5 MB each, 5 GB holds ~1000-1500 photos.
 
 ### 2.2 Metadata Storage (IBM Cloudant - Lite Plan)
 
@@ -269,7 +279,7 @@ chromium-browser --kiosk --noerrdialogs --disable-translate \
 
 ## 5. Security & Privacy
 
-- **OneDrive sharing**: Use M365 family sharing — photos stay within the family's Microsoft tenant
+- **OneDrive isolation**: Dedicated account or scoped shared folder — family members never see other OneDrive content (see Section 2.1)
 - **IBM Cloud Functions**: Secured with API keys (not publicly accessible without token)
 - **Display API access**: Authenticated via a device token stored on the display device
 - **No photos on third-party servers** (except Twilio for WhatsApp — transient, auto-deleted)
@@ -280,7 +290,40 @@ chromium-browser --kiosk --noerrdialogs --disable-translate \
 
 ---
 
-## 6. Implementation Phases
+## 6. Remote Administration (Grandma's Device)
+
+Grandma's display must be fully manageable without physical access.
+
+### Layered Remote Management
+
+| Layer | Tool | What it does | Cost |
+|-------|------|-------------|------|
+| **App settings** | Our PWA + OneDrive `settings.json` | Change slideshow timing, photo order, transitions, night mode schedule — all by editing a JSON file in OneDrive | €0 (built-in) |
+| **Kiosk control** | Fully Kiosk Browser (Android) | Built-in web-based remote admin: view live screen, change URL, restart browser, adjust brightness, view device status, wake/sleep screen | Included in €7 license |
+| **Full remote control** | TeamViewer QuickSupport | Full remote screen control as if touching the tablet — for troubleshooting, OS updates, app installs | Free (personal use) |
+| **Device management** | Google Find My Device | Locate, lock, ring, or wipe the tablet remotely | Free |
+
+### Typical Remote Admin Scenarios
+
+| Scenario | How to handle |
+|----------|--------------|
+| Change slideshow speed | Edit `settings.json` in OneDrive → display picks up changes within minutes |
+| Hide an inappropriate photo | Use admin web app (Phase 5) or directly update Cloudant metadata |
+| Tablet screen is black | Open Fully Kiosk Browser remote admin → wake screen, check status |
+| Tablet needs OS update | Connect via TeamViewer → walk through update |
+| WiFi password changed at grandma's | TeamViewer (if still connected) or physical visit needed |
+| App not loading | Fully Kiosk Browser remote admin → clear cache, reload URL |
+
+### Setup (One-Time at Grandma's House)
+1. Install **Fully Kiosk Browser** — configure remote admin (set password, enable web server)
+2. Install **TeamViewer QuickSupport** — link to your TeamViewer account for unattended access
+3. Enable **Google Find My Device** in Android settings
+4. Configure **Fully Kiosk Browser** to auto-start the PWA URL on boot
+5. Test remote access from home before leaving
+
+---
+
+## 7. Implementation Phases
 
 ### Phase 1: MVP (Core Loop) — ~2-3 weeks of development
 
@@ -369,7 +412,7 @@ chromium-browser --kiosk --noerrdialogs --disable-translate \
 
 ---
 
-## 7. Project Structure (Repository)
+## 8. Project Structure (Repository)
 
 ```
 Remote-Picture-Frame/
@@ -437,7 +480,7 @@ Remote-Picture-Frame/
 
 ---
 
-## 8. Open Decisions
+## 9. Open Decisions
 
 | # | Decision | Options | Recommendation |
 |---|----------|---------|----------------|
@@ -451,7 +494,7 @@ Remote-Picture-Frame/
 
 ---
 
-## 9. Success Criteria
+## 10. Success Criteria
 
 - Grandma plugs in the display → photos appear. No interaction needed. Ever.
 - Family member takes a photo → uploads via OneDrive/Email/WhatsApp → photo appears on grandma's frame within 5 minutes.
