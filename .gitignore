@@ -1,0 +1,35 @@
+# Dependencies
+node_modules/
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Build output
+display-app/dist/
+admin-web/dist/
+
+# Environment / secrets
+.env
+.env.local
+.env.production
+backend/local.settings.json
+*.pem
+*.key
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IBM Cloud
+.bluemix/
+
+# Misc
+*.log
+*.tmp

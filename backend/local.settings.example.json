@@ -1,0 +1,13 @@
+{
+  "CLOUDANT_URL": "https://your-instance.cloudantnosqldb.appdomain.cloud",
+  "CLOUDANT_APIKEY": "your-cloudant-api-key",
+  "CLOUDANT_DB_NAME": "familyframe",
+  "GRAPH_CLIENT_ID": "your-azure-ad-app-client-id",
+  "GRAPH_CLIENT_SECRET": "your-azure-ad-app-client-secret",
+  "GRAPH_TENANT_ID": "your-azure-ad-tenant-id",
+  "ONEDRIVE_USER_ID": "familyframe@outlook.com",
+  "ONEDRIVE_FOLDER_PATH": "/FamilyFrame/photos",
+  "WEBHOOK_URL": "https://your-region.functions.appdomain.cloud/api/v1/web/your-namespace/default/process_new_photo",
+  "DEVICE_TOKEN": "generate-a-random-token-for-tablet-auth",
+  "THUMBNAIL_MAX_SIZE": "800"
+}
