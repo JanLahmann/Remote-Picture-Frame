@@ -53,3 +53,33 @@ export async function getSettings() {
 export async function updateSettings(settings: Record<string, unknown>) {
   return request('settings', {}, settings)
 }
+
+// --- Face Recognition ---
+
+export async function facesSetup() {
+  return request('faces_setup', {}, {})
+}
+
+export async function facesList() {
+  return request('faces_list')
+}
+
+export async function facesAddPerson(name: string) {
+  return request('faces_add_person', {}, { name })
+}
+
+export async function facesDeletePerson(personId: string) {
+  return request('faces_delete_person', { person_id: personId }, {})
+}
+
+export async function facesAddSample(personId: string, imageBase64: string) {
+  return request('faces_add_sample', { person_id: personId }, { image: imageBase64 })
+}
+
+export async function facesTrain() {
+  return request('faces_train', {}, {})
+}
+
+export async function facesStatus() {
+  return request('faces_status')
+}

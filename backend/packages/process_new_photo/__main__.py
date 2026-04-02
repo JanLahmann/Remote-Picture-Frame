@@ -18,6 +18,7 @@ from shared.onedrive import get_file_metadata, get_file_content, get_file_thumbn
 from shared.metadata import create_photo_metadata, find_by_onedrive_id, ensure_database
 from shared.exif_utils import extract_exif
 from shared.geocoding import reverse_geocode
+from shared.face_recognition import recognize_people
 
 # Image file extensions we process
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".heic", ".heif", ".webp", ".bmp", ".tiff"}
@@ -106,6 +107,9 @@ def _process_item(item_id: str) -> dict | None:
     user_info = created_by.get("user", {})
     uploaded_by = user_info.get("displayName", "")
 
+    # Recognize people in the photo using Azure Face API
+    people = recognize_people(content)
+
     # Use OneDrive file description as caption if available
     caption = file_meta.get("description", "")
 
@@ -133,6 +137,7 @@ def _process_item(item_id: str) -> dict | None:
         uploaded_by=uploaded_by,
         upload_channel="onedrive",
         thumbnail_url=thumbnail_url,
+        people=people,
     )
 
     return {"item_id": item_id, "doc_id": doc["_id"], "status": "created"}

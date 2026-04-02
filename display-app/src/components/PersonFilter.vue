@@ -1,31 +1,55 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
-import { fetchUploaders } from '@/services/api'
+import { ref, computed, onUnmounted } from 'vue'
+import type { Photo } from '@/types'
 
-const emit = defineEmits<{
-  filter: [uploader: string]
+const props = defineProps<{
+  photos: Photo[]
 }>()
 
-const uploaders = ref<string[]>([])
+const emit = defineEmits<{
+  filter: [name: string, type: 'person' | 'uploader']
+}>()
+
 const visible = ref(false)
 const activeFilter = ref('')
+const activeFilterType = ref<'person' | 'uploader'>('person')
 let autoResetTimer: ReturnType<typeof setTimeout> | null = null
 let hideTimer: ReturnType<typeof setTimeout> | null = null
 
 const AUTO_RESET_MS = 30 * 60 * 1000 // 30 minutes
 
-async function loadUploaders() {
-  try {
-    uploaders.value = await fetchUploaders()
-  } catch {
-    uploaders.value = []
+// Extract unique people names from face recognition across all photos
+const recognizedPeople = computed(() => {
+  const names = new Set<string>()
+  for (const p of props.photos) {
+    for (const name of (p.people || [])) {
+      names.add(name)
+    }
   }
-}
+  return [...names].sort()
+})
+
+// Extract unique uploader names as fallback
+const uploaders = computed(() => {
+  const names = new Set<string>()
+  for (const p of props.photos) {
+    if (p.uploaded_by) names.add(p.uploaded_by)
+  }
+  return [...names].sort()
+})
+
+// Use recognized people if available, otherwise uploaders
+const filterNames = computed(() =>
+  recognizedPeople.value.length > 0 ? recognizedPeople.value : uploaders.value
+)
+
+const filterType = computed<'person' | 'uploader'>(() =>
+  recognizedPeople.value.length > 0 ? 'person' : 'uploader'
+)
 
 function show() {
-  if (uploaders.value.length === 0) return
+  if (filterNames.value.length === 0) return
   visible.value = true
-  // Auto-hide after 8 seconds if no selection
   clearHideTimer()
   hideTimer = setTimeout(() => {
     if (visible.value && !activeFilter.value) {
@@ -39,24 +63,23 @@ function hide() {
   clearHideTimer()
 }
 
-function selectUploader(name: string) {
+function selectName(name: string) {
   clearHideTimer()
   clearAutoReset()
 
   if (activeFilter.value === name) {
-    // Deselect — back to all photos
     activeFilter.value = ''
-    emit('filter', '')
+    emit('filter', '', filterType.value)
     visible.value = false
   } else {
     activeFilter.value = name
-    emit('filter', name)
+    activeFilterType.value = filterType.value
+    emit('filter', name, filterType.value)
     visible.value = false
 
-    // Auto-reset filter after 30 minutes
     autoResetTimer = setTimeout(() => {
       activeFilter.value = ''
-      emit('filter', '')
+      emit('filter', '', filterType.value)
     }, AUTO_RESET_MS)
   }
 }
@@ -64,7 +87,7 @@ function selectUploader(name: string) {
 function showAll() {
   clearAutoReset()
   activeFilter.value = ''
-  emit('filter', '')
+  emit('filter', '', filterType.value)
   visible.value = false
 }
 
@@ -82,7 +105,6 @@ function clearAutoReset() {
   }
 }
 
-onMounted(loadUploaders)
 onUnmounted(() => {
   clearHideTimer()
   clearAutoReset()
@@ -94,6 +116,9 @@ defineExpose({ show, hide, visible, activeFilter })
 <template>
   <Transition name="filter-panel">
     <div v-if="visible" class="person-filter">
+      <div class="filter-label">
+        {{ recognizedPeople.length > 0 ? 'Wer soll gezeigt werden?' : 'Fotos von wem?' }}
+      </div>
       <div class="filter-buttons">
         <button
           v-if="activeFilter"
@@ -103,16 +128,16 @@ defineExpose({ show, hide, visible, activeFilter })
           Alle Fotos
         </button>
         <button
-          v-for="name in uploaders"
+          v-for="name in filterNames"
           :key="name"
           :class="['filter-btn', { active: activeFilter === name }]"
-          @click="selectUploader(name)"
+          @click="selectName(name)"
         >
           {{ name }}
         </button>
       </div>
       <div v-if="activeFilter" class="active-hint">
-        Zeige nur Fotos von {{ activeFilter }}
+        {{ recognizedPeople.length > 0 ? `Zeige Fotos mit ${activeFilter}` : `Zeige Fotos von ${activeFilter}` }}
       </div>
     </div>
   </Transition>
@@ -137,6 +162,12 @@ defineExpose({ show, hide, visible, activeFilter })
   align-items: center;
   gap: 1rem;
   pointer-events: auto;
+}
+
+.filter-label {
+  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.7);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
 .filter-buttons {

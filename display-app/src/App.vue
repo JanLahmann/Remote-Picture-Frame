@@ -15,10 +15,14 @@ const { settings, nightBrightness } = useSettings()
 // Photo sync
 const { photos } = useSync(settings.value.sync_interval)
 
-// Person filter: filter displayed photos by uploader
+// Person filter: filter displayed photos by person (face recognition) or uploader
 const activeFilter = ref('')
+const activeFilterType = ref<'person' | 'uploader'>('person')
 const filteredPhotos = computed(() => {
   if (!activeFilter.value) return photos.value
+  if (activeFilterType.value === 'person') {
+    return photos.value.filter((p) => (p.people || []).includes(activeFilter.value))
+  }
   return photos.value.filter((p) => p.uploaded_by === activeFilter.value)
 })
 
@@ -62,8 +66,9 @@ function onTogglePause() {
   }
 }
 
-function onPersonFilter(uploader: string) {
-  activeFilter.value = uploader
+function onPersonFilter(name: string, type: 'person' | 'uploader') {
+  activeFilter.value = name
+  activeFilterType.value = type
 }
 
 // Enter fullscreen on first interaction
@@ -98,6 +103,7 @@ const brightnessFilter = computed(() => `brightness(${nightBrightness.value})`)
 
     <PersonFilter
       ref="personFilterRef"
+      :photos="photos"
       @filter="onPersonFilter"
     />
 

@@ -96,6 +96,9 @@ defineExpose({ show, hide })
           <span v-if="locationName" class="meta-item">
             {{ locationName }}
           </span>
+          <span v-if="photo.people && photo.people.length > 0" class="meta-item">
+            {{ photo.people.join(', ') }}
+          </span>
           <span v-if="photo.uploaded_by" class="meta-item">
             von {{ photo.uploaded_by }}
           </span>

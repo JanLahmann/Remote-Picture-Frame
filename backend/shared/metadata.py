@@ -84,6 +84,7 @@ def create_photo_metadata(
     uploaded_by: str = "",
     upload_channel: str = "onedrive",
     thumbnail_url: str = "",
+    people: Optional[list[str]] = None,
 ) -> dict:
     """Create a new photo metadata document in Cloudant."""
     client = _get_client()
@@ -102,6 +103,7 @@ def create_photo_metadata(
         "uploaded_at": datetime.now(timezone.utc).isoformat(),
         "visible": True,
         "tags": [],
+        "people": people or [],
         "thumbnail_url": thumbnail_url,
     }
 

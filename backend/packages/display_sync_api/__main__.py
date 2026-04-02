@@ -66,16 +66,21 @@ def main(params: dict) -> dict:
 
 
 def _handle_sync(params: dict) -> dict:
-    """Return list of photos, optionally filtered by timestamp or uploader."""
+    """Return list of photos, optionally filtered by timestamp, uploader, or person."""
     since = params.get("since")
     limit = min(int(params.get("limit", "200")), 500)
     uploader = params.get("uploader", "")
+    person = params.get("person", "")
 
     photos = list_photos(since=since, visible_only=True, limit=limit)
 
     # Filter by uploader if requested
     if uploader:
         photos = [p for p in photos if p.get("uploaded_by", "") == uploader]
+
+    # Filter by person in photo (face recognition) if requested
+    if person:
+        photos = [p for p in photos if person in p.get("people", [])]
 
     # Enrich with download URLs
     items = []
@@ -91,6 +96,7 @@ def _handle_sync(params: dict) -> dict:
             "uploaded_at": photo.get("uploaded_at", ""),
             "thumbnail_url": photo.get("thumbnail_url", ""),
             "tags": photo.get("tags", []),
+            "people": photo.get("people", []),
         }
 
         # Get fresh download URL from OneDrive

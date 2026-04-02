@@ -16,6 +16,7 @@ export interface Photo {
   download_url: string | null
   thumbnail_url: string
   tags: string[]
+  people: string[]
 }
 
 export interface SyncResponse {

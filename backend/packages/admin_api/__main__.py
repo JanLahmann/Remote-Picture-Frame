@@ -61,6 +61,13 @@ def main(params: dict) -> dict:
         "delete": _handle_delete,
         "stats": _handle_stats,
         "settings": _handle_settings_get if method == "get" else _handle_settings_update,
+        "faces_setup": _handle_faces_setup,
+        "faces_list": _handle_faces_list,
+        "faces_add_person": _handle_faces_add_person,
+        "faces_delete_person": _handle_faces_delete_person,
+        "faces_add_sample": _handle_faces_add_sample,
+        "faces_train": _handle_faces_train,
+        "faces_status": _handle_faces_status,
     }
 
     handler = handlers.get(action)
@@ -274,6 +281,90 @@ def _handle_settings_update(params: dict) -> dict:
     upload_file(config_path, "settings.json", settings_json, "application/json")
 
     return {"statusCode": 200, "headers": CORS_HEADERS, "body": {"status": "saved"}}
+
+
+# --- Face Recognition Management ---
+
+def _handle_faces_setup(params: dict) -> dict:
+    """Create the person group (one-time setup)."""
+    from shared.face_recognition import create_person_group
+    result = create_person_group()
+    return {"statusCode": 200, "headers": CORS_HEADERS, "body": result}
+
+
+def _handle_faces_list(params: dict) -> dict:
+    """List all persons in the face recognition group."""
+    from shared.face_recognition import list_persons
+    persons = list_persons()
+    return {
+        "statusCode": 200,
+        "headers": CORS_HEADERS,
+        "body": {"persons": persons},
+    }
+
+
+def _handle_faces_add_person(params: dict) -> dict:
+    """Add a new person to the face recognition group."""
+    body = _parse_body(params)
+    name = body.get("name", "").strip()
+    if not name:
+        return {"statusCode": 400, "headers": CORS_HEADERS, "body": {"error": "Missing 'name'"}}
+
+    from shared.face_recognition import add_person
+    person_id = add_person(name)
+    return {
+        "statusCode": 200,
+        "headers": CORS_HEADERS,
+        "body": {"personId": person_id, "name": name},
+    }
+
+
+def _handle_faces_delete_person(params: dict) -> dict:
+    """Remove a person from the face recognition group."""
+    person_id = params.get("person_id")
+    if not person_id:
+        return {"statusCode": 400, "headers": CORS_HEADERS, "body": {"error": "Missing 'person_id'"}}
+
+    from shared.face_recognition import delete_person
+    delete_person(person_id)
+    return {"statusCode": 200, "headers": CORS_HEADERS, "body": {"status": "deleted"}}
+
+
+def _handle_faces_add_sample(params: dict) -> dict:
+    """Add a sample face image to a person for training."""
+    import base64
+    person_id = params.get("person_id")
+    if not person_id:
+        return {"statusCode": 400, "headers": CORS_HEADERS, "body": {"error": "Missing 'person_id'"}}
+
+    body = _parse_body(params)
+    image_b64 = body.get("image", "")
+    if not image_b64:
+        return {"statusCode": 400, "headers": CORS_HEADERS, "body": {"error": "Missing 'image' (base64)"}}
+
+    image_bytes = base64.b64decode(image_b64)
+
+    from shared.face_recognition import add_face_to_person
+    face_id = add_face_to_person(person_id, image_bytes)
+    return {
+        "statusCode": 200,
+        "headers": CORS_HEADERS,
+        "body": {"persistedFaceId": face_id},
+    }
+
+
+def _handle_faces_train(params: dict) -> dict:
+    """Start training the face recognition model."""
+    from shared.face_recognition import train_person_group
+    result = train_person_group()
+    return {"statusCode": 200, "headers": CORS_HEADERS, "body": result}
+
+
+def _handle_faces_status(params: dict) -> dict:
+    """Check face recognition training status."""
+    from shared.face_recognition import get_training_status
+    status = get_training_status()
+    return {"statusCode": 200, "headers": CORS_HEADERS, "body": status}
 
 
 def _parse_body(params: dict) -> dict:

@@ -3,13 +3,15 @@ import { ref } from 'vue'
 import Dashboard from '@/components/Dashboard.vue'
 import PhotoGrid from '@/components/PhotoGrid.vue'
 import SettingsPanel from '@/components/SettingsPanel.vue'
+import FaceManager from '@/components/FaceManager.vue'
 
-type Tab = 'dashboard' | 'photos' | 'settings'
+type Tab = 'dashboard' | 'photos' | 'settings' | 'faces'
 const activeTab = ref<Tab>('dashboard')
 
 const tabs: { id: Tab; label: string }[] = [
   { id: 'dashboard', label: 'Uebersicht' },
   { id: 'photos', label: 'Fotos' },
+  { id: 'faces', label: 'Gesichter' },
   { id: 'settings', label: 'Einstellungen' },
 ]
 </script>
@@ -34,6 +36,7 @@ const tabs: { id: Tab; label: string }[] = [
     <main>
       <Dashboard v-if="activeTab === 'dashboard'" />
       <PhotoGrid v-if="activeTab === 'photos'" />
+      <FaceManager v-if="activeTab === 'faces'" />
       <SettingsPanel v-if="activeTab === 'settings'" />
     </main>
   </div>

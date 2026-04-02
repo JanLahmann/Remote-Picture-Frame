@@ -450,7 +450,30 @@ Grandma's display must be fully manageable without physical access.
     - Upload statistics
     - Hosted on IBM Cloud Object Storage
 
-### Phase 6: Future Enhancements (Backlog)
+### Phase 6: Face Recognition (Azure Face API)
+
+Automatic identification of who is **in** each photo, so grandma can filter by person.
+
+**Architecture:**
+- Azure AI Face service (free F0 tier: 30K transactions/month)
+- Person Group trained with 3-6 sample face images per family member
+- `process_new_photo` runs face detection + identification on each upload
+- Recognized names stored in `people[]` field in Cloudant metadata
+- Display person filter uses `people` (who's in the photo) with `uploaded_by` as fallback
+
+**Admin workflow:**
+1. Admin → "Gesichter" tab → create person group (one-time)
+2. Add each family member → upload 3-6 sample face photos
+3. Click "Modell trainieren" → model trains in seconds
+4. All new photos are automatically scanned for recognized faces
+
+**Components:**
+- `backend/shared/face_recognition.py` — Azure Face API client
+- `backend/packages/admin_api` — face management endpoints (setup, add/remove persons, add samples, train)
+- `admin-web/src/components/FaceManager.vue` — admin UI for face training
+- Display: PersonFilter shows recognized people names, overlay shows who's in the photo
+
+### Phase 7: Future Enhancements (Backlog)
 
 - Multi-language support (beyond German)
 - Multiple frames (second display for other family members — just open the URL!)
