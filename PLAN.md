@@ -106,7 +106,31 @@ Each photo gets a metadata document:
   3. The same IBM Cloud Function picks up the new file and creates the metadata record
 - **Bonus**: Works from any device, any platform — just send an email with photos attached
 
-### 2.5 Upload Channel: WhatsApp (Phase 4)
+### 2.5 Upload Channel: Web Upload Page (Phase 3)
+
+A simple, mobile-friendly web page where family members can upload photos directly — no app installation, no account needed. Just a link shared in the family WhatsApp group.
+
+- **URL**: e.g. `https://familyframe.example.com/upload` (hosted alongside the PWA on IBM Cloud Object Storage)
+- **Features**:
+  - Drag & drop or tap to select photos (multiple at once)
+  - Caption field (optional)
+  - Description field (optional)
+  - Name field ("Wer bist du?" — remembered in localStorage)
+  - Upload progress indicator
+  - Works on any phone browser — no app needed
+- **Backend**: Submits to a new `upload_api` IBM Cloud Function that:
+  1. Receives the photo + metadata via multipart form upload
+  2. Uploads to OneDrive `/FamilyFrame/photos/`
+  3. Creates metadata record in Cloudant (caption, description, uploader name)
+- **Security**: Protected by a simple shared family code (e.g. a 6-digit PIN) — not public
+- **Why this is great**:
+  - Lowest friction of all upload channels — just open a link and drop a photo
+  - No OneDrive account, no email address, no WhatsApp number needed
+  - Works for guests (e.g. visitors at a family gathering)
+  - The link can be shared as a QR code printed next to the frame
+  - Can be bookmarked on the home screen like an app
+
+### 2.6 Upload Channel: WhatsApp (Phase 4)
 
 - Dedicated WhatsApp number via **Meta WhatsApp Cloud API** (free tier)
 - Family members send photos (and optional caption as message text) to this number
@@ -129,13 +153,14 @@ Each photo gets a metadata document:
   - Direct from Meta — no middleman
   - 1,000 free conversations/month (user-initiated = family sends photo = free)
 
-### 2.6 Backend: IBM Cloud Functions (Serverless)
+### 2.7 Backend: IBM Cloud Functions (Serverless)
 
 All backend logic runs as IBM Cloud Functions (Python, based on Apache OpenWhisk):
 
 | Function | Trigger | Purpose |
 |----------|---------|---------|
 | `process_new_photo` | HTTP (Graph API webhook) | Extract EXIF, create metadata, generate thumbnail |
+| `upload_api` | HTTP (multipart form POST) | Receive photos from web upload page, save to OneDrive |
 | `whatsapp_webhook` | HTTP (Meta WhatsApp Cloud API webhook) | Receive WhatsApp photos, save to OneDrive |
 | `admin_api` | HTTP | CRUD for metadata, visibility toggle, settings |
 | `display_sync_api` | HTTP | Serve photo list + metadata to display, delta sync |
@@ -152,7 +177,7 @@ All backend logic runs as IBM Cloud Functions (Python, based on Apache OpenWhisk
 - IBM Cloud Functions use Apache OpenWhisk (open source) — no vendor lock-in
 - Power Automate stays in M365 regardless of which cloud hosts the backend
 
-### 2.7 Display: Progressive Web App (PWA)
+### 2.8 Display: Progressive Web App (PWA)
 
 A **single web application** that runs on all display platforms:
 
@@ -206,7 +231,7 @@ A **single web application** that runs on all display platforms:
 | Wake lock limited in Safari | iPad: Guided Access prevents sleep anyway |
 | Less control over system UI | Fullscreen API hides browser chrome; kiosk tools hide system UI |
 
-### 2.8 Admin Interface (Phase 5)
+### 2.9 Admin Interface (Phase 5)
 
 Simple **web app** (Vue.js, same stack as display app), hosted on IBM Cloud Object Storage + CDN:
 
@@ -378,13 +403,21 @@ Grandma's display must be fully manageable without physical access.
    - Build Power Automate flow (email → OneDrive)
    - Test with family members
 
-### Phase 3: Polish & Configuration — ~1 week
+### Phase 3: Web Upload Page & Polish — ~1-2 weeks
 
-7. **Remote configuration**
+7. **Web upload page**
+   - Mobile-friendly upload form (drag & drop, caption, name)
+   - `upload_api` IBM Cloud Function (receives photos, saves to OneDrive)
+   - Protected by a shared family PIN
+   - Hosted alongside PWA on IBM Cloud Object Storage
+   - Generate QR code for the upload link
+   - Share link in family WhatsApp group
+
+8. **Remote configuration**
    - `settings.json` in OneDrive, served via API
    - Configurable: slideshow timing, transitions, order, night mode
 
-8. **App improvements**
+9. **App improvements**
    - Ken Burns effect (CSS animations)
    - Location display (reverse geocoding via Nominatim / OpenStreetMap — free)
    - Multiple display order modes
@@ -394,7 +427,7 @@ Grandma's display must be fully manageable without physical access.
 
 ### Phase 4: WhatsApp Upload — ~1-2 weeks
 
-9. **WhatsApp channel (Meta WhatsApp Cloud API — free)**
+10. **WhatsApp channel (Meta WhatsApp Cloud API — free)**
    - Create Meta Business Portfolio (free, no real business needed)
    - Create Meta Developer App + add WhatsApp product
    - Register a phone number (prepaid SIM, ~€5 one-time)
@@ -404,7 +437,7 @@ Grandma's display must be fully manageable without physical access.
 
 ### Phase 5: Admin Interface — ~2 weeks
 
-10. **Admin web app**
+11. **Admin web app**
     - Vue.js app (same stack as display PWA)
     - Photo management (view, edit metadata, hide/show)
     - Settings management
@@ -421,7 +454,6 @@ Grandma's display must be fully manageable without physical access.
 - Video clip support (short clips, <30s)
 - Reactions (family members can "heart" photos from their phones)
 - Ambient light sensor integration (auto-brightness, where supported)
-- Web upload portal (for family members who don't want OneDrive/Email/WhatsApp)
 - Push notifications to display via Web Push API (instant photo updates)
 
 ---
@@ -439,6 +471,8 @@ Remote-Picture-Frame/
 │   │   │   └── __main__.py          ← IBM Cloud Function entry point
 │   │   ├── display_sync_api/
 │   │   │   └── __main__.py
+│   │   ├── upload_api/
+│   │   │   └── __main__.py          ← receives web upload form submissions
 │   │   ├── whatsapp_webhook/
 │   │   │   └── __main__.py
 │   │   ├── admin_api/
@@ -474,6 +508,10 @@ Remote-Picture-Frame/
 │       │   └── cache.ts             ← Cache Storage management
 │       └── types/
 │           └── index.ts
+├── upload-page/                     ← Phase 3: simple web upload form
+│   ├── index.html                   ← single-page upload form (mobile-friendly)
+│   ├── style.css
+│   └── upload.js
 ├── admin-web/                       ← Phase 5
 │   ├── package.json
 │   └── src/
