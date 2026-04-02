@@ -139,17 +139,23 @@ def _process_message(message: dict, contacts: list) -> dict | None:
     # Download the image from Meta's servers
     image_bytes = _download_media(media_id)
     if not image_bytes:
+        _send_reply(sender_wa_id, "Fehler: Foto konnte nicht heruntergeladen werden. Bitte nochmal versuchen.")
         return {"error": "Failed to download media", "media_id": media_id}
 
-    # Extract EXIF data
+    # Try to extract EXIF data (WhatsApp strips most/all EXIF data,
+    # so date_taken, GPS, and camera info will usually be empty)
     exif_data = extract_exif(image_bytes)
 
-    # Reverse geocode if GPS data present
+    # Reverse geocode if GPS data present (unlikely from WhatsApp)
     location = exif_data.get("location")
     if location and location.get("lat") and location.get("lon"):
         place_name = reverse_geocode(location["lat"], location["lon"])
         if place_name:
             location["name"] = place_name
+
+    # Recognize people in the photo
+    from shared.face_recognition import recognize_people
+    people = recognize_people(image_bytes)
 
     # Generate filename
     from datetime import datetime, timezone
@@ -180,9 +186,69 @@ def _process_message(message: dict, contacts: list) -> dict | None:
         uploaded_by=sender_name or sender_wa_id,
         upload_channel="whatsapp",
         thumbnail_url=thumbnail_url,
+        people=people,
     )
 
+    # Send confirmation reply to sender
+    _send_confirmation(sender_wa_id, sender_name, caption, people, location)
+
     return {"doc_id": doc["_id"], "filename": filename, "from": sender_name}
+
+
+def _send_confirmation(
+    recipient_wa_id: str,
+    sender_name: str,
+    caption: str,
+    people: list[str],
+    location: dict | None,
+) -> None:
+    """Send a friendly confirmation reply after a photo was processed."""
+    lines = ["Danke, dein Foto ist auf Omas Bilderrahmen!"]
+
+    if caption:
+        lines.append(f'Bildunterschrift: "{caption}"')
+
+    if people:
+        lines.append(f"Erkannt: {', '.join(people)}")
+
+    if location and location.get("name"):
+        lines.append(f"Ort: {location['name']}")
+    elif location and location.get("lat"):
+        lines.append(f"Ort: {location['lat']:.2f}, {location['lon']:.2f}")
+    else:
+        lines.append("Tipp: WhatsApp entfernt leider den Standort aus Fotos. "
+                      "Fuer Standort-Anzeige nutze die Upload-Webseite.")
+
+    _send_reply(recipient_wa_id, "\n".join(lines))
+
+
+def _send_reply(recipient_wa_id: str, text: str) -> None:
+    """Send a text message reply via WhatsApp Cloud API."""
+    access_token = config.get("WHATSAPP_ACCESS_TOKEN")
+    phone_number_id = config.get("WHATSAPP_PHONE_NUMBER_ID")
+    api_version = config.get("WHATSAPP_API_VERSION", "v21.0")
+
+    if not access_token or not phone_number_id:
+        return
+
+    url = f"https://graph.facebook.com/{api_version}/{phone_number_id}/messages"
+    try:
+        http_requests.post(
+            url,
+            headers={
+                "Authorization": f"Bearer {access_token}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "messaging_product": "whatsapp",
+                "to": recipient_wa_id,
+                "type": "text",
+                "text": {"body": text},
+            },
+            timeout=10,
+        )
+    except Exception:
+        pass  # Best effort — don't fail the upload if reply fails
 
 
 def _download_media(media_id: str) -> bytes | None:
