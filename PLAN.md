@@ -503,6 +503,72 @@ Automatic identification of who is **in** each photo, so grandma can filter by p
 - Ambient light sensor integration (auto-brightness, where supported)
 - Push notifications to display via Web Push API (instant photo updates)
 
+- **Alternative backend: Google Photos instead of OneDrive**
+  Replace OneDrive with Google Photos as the photo storage layer. This would significantly simplify the architecture by leveraging Google's built-in EXIF extraction, thumbnail generation, and face recognition.
+
+  **How it would work:**
+  - One dedicated Google account (e.g. `familyframe@gmail.com`) owns all albums
+  - Family members add photos via shared album links (no Google account needed to add)
+  - Family can create event albums directly in Google Photos ("Urlaub Kroatien 2026")
+  - Our backend reads photos via Google Photos API (`mediaItems.search()`, `albums.list()`)
+  - WhatsApp webhook uploads to Google Photos via API instead of OneDrive
+  - Web upload page uploads to Google Photos via API instead of OneDrive
+
+  **What we'd eliminate:**
+  - All OneDrive/Graph API code (onedrive.py, webhook subscriptions, refresh_subscription)
+  - Azure Face API integration (Google does face grouping natively)
+  - EXIF extraction code (Google extracts metadata automatically)
+  - Thumbnail generation (Google provides multiple sizes via `baseUrl` parameter)
+
+  **What we'd keep:**
+  - IBM Cloud backend (lighter — display sync, WhatsApp webhook, upload API, admin)
+  - Cloudant (custom metadata overlay: favorites, birthday config, smart rotation state, captions)
+  - Display PWA with smart rotation, overlays, person filter, touch controls
+  - WhatsApp upload channel
+  - Admin interface (lighter)
+
+  **Key limitations of Google Photos API:**
+  - **No person/face query via API** — Google removed person-based search from the API for privacy. Workarounds: (a) family creates per-person albums manually, (b) we keep lightweight face tagging ourselves, or (c) accept this limitation
+  - **Read-only for favorites** — API can't mark favorites; we track our own in Cloudant
+  - **Shared album API access** — works well when the owning account authorizes our app; contributors don't need API access
+  - **Rate limits** — 10,000 requests/day (free), more than enough for a family frame
+  - **Storage** — 15 GB free (shared with Gmail/Drive), ~€2/month for 100 GB if needed
+
+  **Cost comparison:**
+  | | Current (OneDrive) | Google Photos |
+  |---|---|---|
+  | Photo storage | €0 (existing M365 1TB) | €0 (15 GB free) or €2/mo (100 GB) |
+  | Face recognition | €0 (Azure free tier, 30K/mo) | €0 (built-in, but no API access) |
+  | Backend complexity | High (webhooks, subscriptions, EXIF, thumbnails) | Low (Google handles most of it) |
+  | Vendor lock-in | Microsoft | Google |
+
+  **Decision**: Document as alternative. Current OneDrive approach works and uses existing M365 subscription. Google Photos is a strong option if starting fresh or if OneDrive integration proves too complex in practice. Could also be offered as a user-configurable backend choice.
+
+- **Display on Samsung Smart TV (or any smart TV)**
+  Instead of a dedicated tablet or Raspberry Pi, use an existing smart TV as the display.
+
+  **Recommended approach: Chromecast with Google TV (~€35) or Amazon Fire TV Stick (~€35)**
+  - Plug into any TV's HDMI port
+  - Install a kiosk/fullscreen browser (e.g. "Fully Kiosk Browser" on Fire TV, or sideload on Chromecast)
+  - Auto-launch our PWA URL on boot
+  - HDMI-CEC can auto-power the TV on/off on schedule
+  - Cheapest, most reliable method — works with ANY TV that has HDMI
+
+  **Alternative: Samsung TV's built-in browser**
+  - Open PWA URL in Samsung Internet browser → go fullscreen
+  - Works but less reliable: browser may close after updates, no auto-start on boot, TV standby interrupts
+
+  **Samsung "The Frame" TV**
+  - Designed as a digital picture frame, but requires manual photo upload via SmartThings app
+  - No URL/API-based slideshow — not compatible with our PWA approach
+  - Samsung Art Store subscription not needed (own photos are free)
+
+  **Integration with display PWA:**
+  - No code changes needed — our PWA runs in any browser
+  - Screen Wake Lock API works in Chromium-based browsers on streaming sticks
+  - Touch controls not available (use TV remote for basic navigation, or skip — auto-slideshow is the primary mode)
+  - Night mode dimming works via CSS (or HDMI-CEC power off)
+
 ---
 
 ## 8. Project Structure (Repository)
