@@ -190,6 +190,28 @@
       font-weight: 500;
     }
 
+    .field select {
+      padding: 0.75rem;
+      background: var(--surface);
+      border: 1px solid #333;
+      border-radius: var(--radius);
+      color: var(--text);
+      font-size: 1rem;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.2s;
+      appearance: none;
+      -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23888' stroke-width='2' fill='none'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 0.75rem center;
+      padding-right: 2.5rem;
+    }
+
+    .field select:focus {
+      border-color: var(--primary);
+    }
+
     .field input, .field textarea {
       padding: 0.75rem;
       background: var(--surface);
@@ -345,10 +367,17 @@
       </div>
 
       <!-- Name -->
-      <div class="field">
-        <label for="uploaderName">Dein Name</label>
-        <input type="text" id="uploaderName" placeholder="z.B. Maria" />
+      <div class="field" id="nameField">
+        <label for="uploaderName">Wer bist du?</label>
+        <select id="uploaderName">
+          <option value="" disabled selected>Bitte auswaehlen...</option>
+        </select>
         <span class="hint">Wird auf dem Bilderrahmen unter dem Foto angezeigt</span>
+      </div>
+
+      <!-- Greeting when user is identified via URL -->
+      <div class="field" id="userGreeting" style="display: none;">
+        <span style="color: var(--primary); font-weight: 600;" id="greetingText"></span>
       </div>
 
       <!-- Progress bar -->
@@ -377,6 +406,11 @@
     const UPLOAD_ENDPOINT = API_BASE + '/upload_api';
     const EXPECTED_PIN_HASH = ''; // SHA-256 hash of the PIN (for client-side pre-check)
 
+    // Family member names — configure this list for your family
+    const FAMILY_MEMBERS = [
+      // 'Anna', 'Thomas', 'Lisa', 'Maria', 'Jan', ...
+    ];
+
     // --- State ---
     let selectedFiles = [];
     let familyPin = '';
@@ -392,7 +426,34 @@
     const captionInput = document.getElementById('caption');
     const descriptionInput = document.getElementById('description');
     const nameInput = document.getElementById('uploaderName');
+    const nameField = document.getElementById('nameField');
+    const userGreeting = document.getElementById('userGreeting');
+    const greetingText = document.getElementById('greetingText');
     const submitBtn = document.getElementById('submitBtn');
+
+    // --- Populate family member dropdown ---
+    FAMILY_MEMBERS.sort().forEach(name => {
+      const opt = document.createElement('option');
+      opt.value = name;
+      opt.textContent = name;
+      nameInput.appendChild(opt);
+    });
+
+    // --- URL parameter: ?user=Anna auto-selects and hides the dropdown ---
+    const urlUser = new URLSearchParams(window.location.search).get('user');
+    let fixedUser = '';
+    if (urlUser) {
+      // Find matching name (case-insensitive)
+      const match = FAMILY_MEMBERS.find(n => n.toLowerCase() === urlUser.toLowerCase());
+      if (match) {
+        fixedUser = match;
+        nameInput.value = match;
+        nameField.style.display = 'none';
+        userGreeting.style.display = 'block';
+        greetingText.textContent = `Hallo ${match}!`;
+        localStorage.setItem('familyframe_name', match);
+      }
+    }
     const progressBar = document.getElementById('progressBar');
     const progressFill = document.getElementById('progressFill');
     const status = document.getElementById('status');
@@ -418,9 +479,13 @@
     function showUploadForm() {
       pinScreen.style.display = 'none';
       uploadForm.classList.add('active');
-      // Restore saved name
-      const savedName = localStorage.getItem('familyframe_name');
-      if (savedName) nameInput.value = savedName;
+      // Restore saved name (if not already set via URL)
+      if (!fixedUser) {
+        const savedName = localStorage.getItem('familyframe_name');
+        if (savedName && FAMILY_MEMBERS.includes(savedName)) {
+          nameInput.value = savedName;
+        }
+      }
     }
 
     function showPinError() {
@@ -433,9 +498,9 @@
       localStorage.removeItem('familyframe_pin');
     }
 
-    // --- Name persistence ---
+    // --- Name persistence (dropdown selection) ---
     nameInput.addEventListener('change', function () {
-      localStorage.setItem('familyframe_name', this.value.trim());
+      localStorage.setItem('familyframe_name', this.value);
     });
 
     // --- File selection ---
@@ -541,7 +606,7 @@
             photos: photos,
             caption: captionInput.value.trim(),
             description: descriptionInput.value.trim(),
-            name: nameInput.value.trim(),
+            name: fixedUser || nameInput.value,
           }),
         });
 
