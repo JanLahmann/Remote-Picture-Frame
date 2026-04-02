@@ -475,10 +475,9 @@ Automatic identification of who is **in** each photo, so grandma can filter by p
 
 ### Phase 7: Future Enhancements (Backlog)
 
+- **Image proxy**: Proxy photo downloads through backend instead of exposing pre-authenticated Microsoft URLs directly. Benefits: stable cacheable URLs, better service worker caching, credentials stay server-side, fewer Graph API calls. Trade-off: adds latency and IBM Cloud egress.
 - Multi-language support (beyond German)
 - Multiple frames (second display for other family members — just open the URL!)
-- Photo albums / themed slideshows
-- Anniversary/birthday photo highlights (auto-curate by date)
 - Video clip support (short clips, <30s)
 - Reactions (family members can "heart" photos from their phones)
 - Ambient light sensor integration (auto-brightness, where supported)
