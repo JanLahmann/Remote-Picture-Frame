@@ -41,10 +41,20 @@ Einen Unterordner im bestehenden Family-OneDrive freigeben.
 
 ```
 FamilyFrame/
-  photos/          ← hier landen alle Fotos
+  photos/                          ← Upload-Ordner (alle laden hier hoch)
+    Anna/                          ← automatisch erstellt vom Backend
+    Thomas/                        ← automatisch erstellt vom Backend
+    Urlaub-Kroatien-2026/          ← optional: Familie kann Event-Ordner erstellen
   config/
-    settings.json  ← Einstellungen fuer den Bilderrahmen
+    settings.json                  ← Einstellungen fuer den Bilderrahmen
 ```
+
+### Wie funktioniert das?
+
+- **Upload**: Alle Familienmitglieder laden Fotos direkt in `/FamilyFrame/photos/` hoch
+- **Auto-Sortierung**: Das Backend erkennt den Uploader (ueber OneDrive-Metadaten) und verschiebt das Foto automatisch in einen Unterordner mit dem Namen der Person (z.B. `/photos/Anna/`)
+- **Event-Ordner**: Familienmitglieder koennen optional eigene Unterordner erstellen (z.B. `/photos/Urlaub-Kroatien-2026/`). Fotos in Event-Ordnern werden **nicht** automatisch verschoben, sondern bleiben dort
+- **Fuer den Bilderrahmen macht es keinen Unterschied** — alle Fotos aus allen Unterordnern werden angezeigt
 
 ### settings.json (Standardwerte)
 

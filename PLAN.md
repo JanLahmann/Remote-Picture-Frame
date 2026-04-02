@@ -48,10 +48,15 @@ Create a free Microsoft account (e.g. `familyframe@outlook.com`) used exclusivel
 
 ```
 /FamilyFrame/                       ← shared with family (or in dedicated account)
-  /photos/                          ← all photos land here
+  /photos/                          ← upload target (family drops photos here)
+    /Anna/                          ← auto-created: backend sorts by uploader
+    /Thomas/                        ← auto-created: backend sorts by uploader
+    /Urlaub-Kroatien-2026/          ← optional: family can create event folders
   /config/
     settings.json                   ← slideshow settings, synced to display
 ```
+
+**Folder organization**: Family uploads to `/photos/` (flat, simple). The backend automatically moves each photo into a subfolder named after the uploader (detected via OneDrive metadata). Family members can also create their own event/occasion subfolders — photos in those are left in place. The display shows all photos from all subfolders equally.
 
 > **Note**: With Strategy B, the 5 GB limit can be extended by purchasing a standalone Microsoft 365 Basic plan (~€2/month for 100 GB) if needed later. For photos at ~3-5 MB each, 5 GB holds ~1000-1500 photos.
 

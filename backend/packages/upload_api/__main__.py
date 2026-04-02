@@ -93,7 +93,9 @@ def main(params: dict) -> dict:
 
     ensure_database()
     results = []
-    folder_path = config.get("ONEDRIVE_FOLDER_PATH", "/FamilyFrame/photos")
+    base_folder = config.get("ONEDRIVE_FOLDER_PATH", "/FamilyFrame/photos")
+    # Upload directly into uploader's subfolder
+    folder_path = f"{base_folder.rstrip('/')}/{uploader_name}" if uploader_name else base_folder
 
     for photo in photos:
         try:

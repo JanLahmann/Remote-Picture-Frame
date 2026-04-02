@@ -159,3 +159,47 @@ def get_download_url(item_id: str) -> Optional[str]:
     """Get a short-lived download URL for a file (for direct display)."""
     metadata = get_file_metadata(item_id)
     return metadata.get("@microsoft.graph.downloadUrl")
+
+
+def move_file(item_id: str, target_folder_path: str) -> dict:
+    """Move a file to a different folder in OneDrive.
+
+    Creates the target folder if it doesn't exist.
+    """
+    # Ensure target folder exists (create if needed)
+    encoded_path = target_folder_path.replace(" ", "%20")
+    folder_url = f"{_user_drive_url()}/root:{encoded_path}"
+    resp = requests.get(folder_url, headers=_headers(), timeout=15)
+
+    if resp.status_code == 404:
+        # Create the folder
+        parent_path = "/".join(target_folder_path.rstrip("/").split("/")[:-1])
+        folder_name = target_folder_path.rstrip("/").split("/")[-1]
+        encoded_parent = parent_path.replace(" ", "%20")
+        create_url = f"{_user_drive_url()}/root:{encoded_parent}:/children"
+        create_payload = {
+            "name": folder_name,
+            "folder": {},
+            "@microsoft.graph.conflictBehavior": "fail",
+        }
+        create_resp = requests.post(
+            create_url, headers=_headers(), json=create_payload, timeout=15,
+        )
+        # 409 = folder already exists (race condition), that's fine
+        if create_resp.status_code not in (200, 201, 409):
+            create_resp.raise_for_status()
+        # Re-fetch folder to get its ID
+        resp = requests.get(folder_url, headers=_headers(), timeout=15)
+        resp.raise_for_status()
+
+    folder_data = resp.json()
+    folder_id = folder_data["id"]
+
+    # Move the file
+    move_url = f"{_user_drive_url()}/items/{item_id}"
+    move_payload = {"parentReference": {"id": folder_id}}
+    move_resp = requests.patch(
+        move_url, headers=_headers(), json=move_payload, timeout=30,
+    )
+    move_resp.raise_for_status()
+    return move_resp.json()

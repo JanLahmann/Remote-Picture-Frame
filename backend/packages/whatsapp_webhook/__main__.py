@@ -157,8 +157,10 @@ def _process_message(message: dict, contacts: list) -> dict | None:
     name_hash = hashlib.md5(image_bytes[:1024]).hexdigest()[:6]
     filename = f"wa_{timestamp}_{name_hash}.jpg"
 
-    # Upload to OneDrive
-    folder_path = config.get("ONEDRIVE_FOLDER_PATH", "/FamilyFrame/photos")
+    # Upload to OneDrive (into uploader's subfolder)
+    base_folder = config.get("ONEDRIVE_FOLDER_PATH", "/FamilyFrame/photos")
+    uploader = sender_name or sender_wa_id
+    folder_path = f"{base_folder.rstrip('/')}/{uploader}" if uploader else base_folder
     od_result = upload_file(folder_path, filename, image_bytes, "image/jpeg")
     item_id = od_result.get("id", "")
 

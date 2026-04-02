@@ -14,7 +14,7 @@ import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
 from shared import config
-from shared.onedrive import get_file_metadata, get_file_content, get_file_thumbnail_url
+from shared.onedrive import get_file_metadata, get_file_content, get_file_thumbnail_url, move_file
 from shared.metadata import create_photo_metadata, find_by_onedrive_id, ensure_database
 from shared.exif_utils import extract_exif
 from shared.geocoding import reverse_geocode
@@ -108,6 +108,19 @@ def _process_item(item_id: str) -> dict | None:
 
     # Use OneDrive file description as caption if available
     caption = file_meta.get("description", "")
+
+    # Auto-sort: move photo into uploader's subfolder if it's in the root photos folder
+    parent_ref = file_meta.get("parentReference", {})
+    parent_path = parent_ref.get("path", "")
+    photos_folder = config.get("ONEDRIVE_FOLDER_PATH", "/FamilyFrame/photos")
+
+    # Only move if photo is directly in the root photos folder (not already in a subfolder)
+    if uploaded_by and parent_path.endswith(photos_folder.rstrip("/")):
+        try:
+            target_folder = f"{photos_folder.rstrip('/')}/{uploaded_by}"
+            move_file(item_id, target_folder)
+        except Exception:
+            pass  # If move fails, photo stays in root — still gets processed
 
     # Create metadata record in Cloudant
     ensure_database()
