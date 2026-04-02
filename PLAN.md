@@ -475,7 +475,15 @@ Automatic identification of who is **in** each photo, so grandma can filter by p
 
 ### Phase 7: Future Enhancements (Backlog)
 
-- **Image proxy**: Proxy photo downloads through backend instead of exposing pre-authenticated Microsoft URLs directly. Benefits: stable cacheable URLs, better service worker caching, credentials stay server-side, fewer Graph API calls. Trade-off: adds latency and IBM Cloud egress.
+- **Raspberry Pi: local OneDrive sync via rclone** (replaces image proxy for RPi deployments):
+  Mount OneDrive directly on the RPi with `rclone mount onedrive:/FamilyFrame/photos /home/pi/photos --vfs-cache-mode full`.
+  Serve images via a local nginx or Python HTTP server (`http://localhost:8080/photos/...`).
+  The display PWA points to localhost for images instead of Microsoft download URLs.
+  Benefits: perfect offline support, no Graph API download calls, instant image loading, no backend egress.
+  Metadata (captions, people, favorites) still comes from Cloudant via IBM Cloud Functions — only the image delivery changes.
+  Update `raspberry-pi/setup.sh` to install rclone, configure OneDrive remote, set up systemd service for mount + local HTTP server.
+  Does NOT apply to Android/iPad tablets (PWA can't access local files there — keep current approach or image proxy).
+- **Image proxy** (for tablet deployments): Proxy photo downloads through backend instead of exposing pre-authenticated Microsoft URLs directly. Benefits: stable cacheable URLs, better service worker caching, credentials stay server-side, fewer Graph API calls. Trade-off: adds latency and IBM Cloud egress.
 - Multi-language support (beyond German)
 - Multiple frames (second display for other family members — just open the URL!)
 - Video clip support (short clips, <30s)
