@@ -7,7 +7,12 @@
   "GRAPH_TENANT_ID": "your-azure-ad-tenant-id",
   "ONEDRIVE_USER_ID": "familyframe@outlook.com",
   "ONEDRIVE_FOLDER_PATH": "/FamilyFrame/photos",
-  "WEBHOOK_URL": "https://your-region.functions.appdomain.cloud/api/v1/web/your-namespace/default/process_new_photo",
+  "WEBHOOK_URL": "https://your-region.functions.appdomain.cloud/api/v1/web/your-namespace/familyframe/process_new_photo",
   "DEVICE_TOKEN": "generate-a-random-token-for-tablet-auth",
-  "THUMBNAIL_MAX_SIZE": "800"
+  "UPLOAD_PIN": "123456",
+  "THUMBNAIL_MAX_SIZE": "800",
+  "WHATSAPP_ACCESS_TOKEN": "your-meta-whatsapp-access-token",
+  "WHATSAPP_VERIFY_TOKEN": "a-random-string-you-choose-for-webhook-verification",
+  "WHATSAPP_APP_SECRET": "your-meta-app-secret-for-signature-verification",
+  "WHATSAPP_API_VERSION": "v21.0"
 }

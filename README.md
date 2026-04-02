@@ -125,6 +125,7 @@ Ordner `/FamilyFrame/photos/` mit der Familie teilen. Details: [docs/setup-onedr
 | [docs/setup-onedrive.md](docs/setup-onedrive.md) | OneDrive Ordnerstruktur + Familie einladen |
 | [docs/setup-display.md](docs/setup-display.md) | Display-Geraet einrichten (Android / iPad / RPi) |
 | [docs/setup-email-powerautomate.md](docs/setup-email-powerautomate.md) | E-Mail-Upload mit Power Automate |
+| [docs/setup-whatsapp.md](docs/setup-whatsapp.md) | WhatsApp-Upload mit Meta Cloud API |
 | [docs/family-guide-de.md](docs/family-guide-de.md) | Einfache Anleitung fuer Familienmitglieder |
 
 ## Hardware-Empfehlung

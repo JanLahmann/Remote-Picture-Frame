@@ -63,6 +63,36 @@ Die Fotos erscheinen innerhalb weniger Minuten auf Omas Bilderrahmen.
 
 ---
 
+## Weg 3: Fotos per WhatsApp schicken
+
+Am einfachsten — direkt aus WhatsApp!
+
+1. Speichere diese Nummer in deinem Telefon: **+49 XXX XXXXXXXX** *(die genaue Nummer bekommst du von deinem Admin)*
+   - Kontaktname: z.B. "Omas Bilderrahmen"
+2. Oeffne **WhatsApp** und schicke ein Foto an diesen Kontakt
+3. Optional: Schreibe eine **Bildunterschrift** dazu (wird auf dem Bilderrahmen angezeigt)
+4. Fertig!
+
+> **Tipp**: Du kannst auch mehrere Fotos auf einmal schicken.
+> Jedes Foto wird einzeln auf dem Bilderrahmen angezeigt.
+
+---
+
+## Weg 4: Fotos ueber die Upload-Webseite hochladen
+
+Kein App, kein Account noetig — einfach einen Link oeffnen!
+
+1. Oeffne diesen Link im Browser: **https://familyframe.example.com/upload** *(den genauen Link bekommst du von deinem Admin)*
+2. Gib den **Familien-PIN** ein (beim ersten Mal, wird danach gespeichert)
+3. Tippe auf **"Fotos auswaehlen"** oder ziehe Fotos in das Feld
+4. Gib eine **Bildunterschrift** ein (optional)
+5. Gib deinen **Namen** ein (wird beim ersten Mal gespeichert)
+6. Tippe auf **Hochladen**
+
+> **Tipp**: Speichere den Link als Lesezeichen auf deinem Handy — dann geht es beim naechsten Mal noch schneller.
+
+---
+
 ## Tipps
 
 - **Mehrere Fotos auf einmal**: Ihr koennt beliebig viele Fotos gleichzeitig hochladen
