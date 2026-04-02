@@ -475,6 +475,18 @@ Automatic identification of who is **in** each photo, so grandma can filter by p
 
 ### Phase 7: Future Enhancements (Backlog)
 
+- **Raspberry Pi hardware & display deep-dive**:
+  Research and document concrete RPi picture frame builds:
+  - **Display options**: Official 7" (800x480, too low-res?), Waveshare 10.1" IPS (1280x800, HDMI), Pimoroni HyperPixel 4.0 (4" high-DPI, too small), generic 10-15" HDMI IPS monitors (1080p, best image quality but need separate power), repurposed old laptop screens with HDMI controller boards (~€20-30).
+  - **Cases / frames**: 3D-printed picture frame enclosures (Thingiverse), IKEA RIBBA frame hack (mount screen behind photo frame mat), commercial RPi display cases (e.g. SmartiPi Touch), wall-mount VESA brackets for larger displays, custom wood frame.
+  - **Power**: Single USB-C powering both RPi and display (official 7" only), or two power cables (RPi + HDMI display). Consider smart plug for scheduled on/off as alternative to night mode dimming.
+  - **RPi model**: RPi 4 (2GB sufficient for Chromium kiosk), RPi 5 (overkill but future-proof), RPi Zero 2 W (might struggle with Chromium + image rendering).
+  - **Recommended builds**:
+    - Budget (~€100): RPi 4 2GB + official 7" touchscreen + SmartiPi case
+    - Quality (~€180): RPi 4 4GB + Waveshare 10.1" IPS HDMI + 3D-printed frame
+    - Premium (~€250): RPi 5 + 13-15" 1080p IPS HDMI monitor + IKEA frame hack
+  - **Setup automation**: Extend `raspberry-pi/setup.sh` with display auto-detection, screen rotation config, HDMI settings for non-standard displays, touch calibration.
+
 - **Raspberry Pi: local OneDrive sync via rclone** (replaces image proxy for RPi deployments):
   Mount OneDrive directly on the RPi with `rclone mount onedrive:/FamilyFrame/photos /home/pi/photos --vfs-cache-mode full`.
   Serve images via a local nginx or Python HTTP server (`http://localhost:8080/photos/...`).
