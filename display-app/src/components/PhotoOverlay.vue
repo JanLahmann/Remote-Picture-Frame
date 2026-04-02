@@ -63,6 +63,32 @@ const isNewPhoto = computed(() => {
   return uploadedAt > oneDayAgo
 })
 
+const isOnThisDay = computed(() => {
+  if (!props.photo?.date_taken) return false
+  try {
+    const taken = new Date(props.photo.date_taken)
+    const today = new Date()
+    return (
+      taken.getMonth() === today.getMonth() &&
+      taken.getDate() === today.getDate() &&
+      taken.getFullYear() < today.getFullYear()
+    )
+  } catch {
+    return false
+  }
+})
+
+const onThisDayYear = computed(() => {
+  if (!isOnThisDay.value || !props.photo?.date_taken) return ''
+  try {
+    const taken = new Date(props.photo.date_taken)
+    const years = new Date().getFullYear() - taken.getFullYear()
+    return `Vor ${years} Jahr${years !== 1 ? 'en' : ''}`
+  } catch {
+    return ''
+  }
+})
+
 const locationName = computed(() => {
   const loc = props.photo?.location
   if (!loc) return ''
@@ -79,8 +105,12 @@ defineExpose({ show, hide })
   <Transition name="overlay">
     <div v-if="visible && photo" class="overlay">
       <div class="overlay-content">
-        <!-- New photo badge -->
-        <span v-if="isNewPhoto" class="new-badge">Neu</span>
+        <!-- Badges -->
+        <div class="badges">
+          <span v-if="isNewPhoto" class="badge new-badge">Neu</span>
+          <span v-if="isOnThisDay" class="badge memory-badge">{{ onThisDayYear }}</span>
+          <span v-if="photo.favorite" class="badge fav-badge">&#9829;</span>
+        </div>
 
         <!-- Caption -->
         <h2 v-if="photo.caption" class="caption">{{ photo.caption }}</h2>
@@ -170,17 +200,34 @@ defineExpose({ show, hide })
   opacity: 0.6;
 }
 
-.new-badge {
+.badges {
+  display: flex;
+  gap: 0.4rem;
+  margin-bottom: 0.4rem;
+}
+
+.badge {
   display: inline-block;
-  background: rgba(78, 204, 163, 0.8);
   color: #fff;
   font-size: 0.75rem;
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
   padding: 0.2rem 0.6rem;
   border-radius: 0.8rem;
-  margin-bottom: 0.4rem;
+}
+
+.new-badge {
+  background: rgba(78, 204, 163, 0.8);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.memory-badge {
+  background: rgba(160, 120, 240, 0.8);
+}
+
+.fav-badge {
+  background: rgba(231, 76, 100, 0.8);
+  font-size: 0.85rem;
 }
 
 .filter-indicator {

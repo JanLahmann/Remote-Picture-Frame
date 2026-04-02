@@ -71,6 +71,16 @@ export function useSlideshow(
     const oneDayAgo = now - 24 * 60 * 60 * 1000
     const recentSet = new Set(recentlyShown.value)
 
+    const today = new Date()
+    const todayMMDD = `${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+
+    // Check if it's someone's birthday
+    const birthdayNames = new Set(
+      (settings.value.birthdays || [])
+        .filter((b) => b.date === todayMMDD)
+        .map((b) => b.name),
+    )
+
     // Build weights for each photo
     const weights: number[] = list.map((photo) => {
       // Base weight
@@ -89,6 +99,32 @@ export function useSlideshow(
         w *= 2.0
       } else if (ageDays < 30) {
         w *= 1.5
+      }
+
+      // Boost favorites
+      if (photo.favorite) {
+        w *= 2.5
+      }
+
+      // Boost "on this day" photos (same month+day from previous years)
+      if (photo.date_taken) {
+        try {
+          const taken = new Date(photo.date_taken)
+          const takenMMDD = `${String(taken.getMonth() + 1).padStart(2, '0')}-${String(taken.getDate()).padStart(2, '0')}`
+          if (takenMMDD === todayMMDD && taken.getFullYear() < today.getFullYear()) {
+            w *= 4.0 // Strong boost for memories
+          }
+        } catch { /* ignore invalid dates */ }
+      }
+
+      // Boost birthday person's photos
+      if (birthdayNames.size > 0) {
+        const photoPeople = photo.people || []
+        const isFromBirthdayPerson = birthdayNames.has(photo.uploaded_by)
+        const hasBirthdayPerson = photoPeople.some((p) => birthdayNames.has(p))
+        if (isFromBirthdayPerson || hasBirthdayPerson) {
+          w *= 3.0
+        }
       }
 
       // Penalize recently shown photos

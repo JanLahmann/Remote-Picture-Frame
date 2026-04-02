@@ -7,6 +7,7 @@ import PersonFilter from '@/components/PersonFilter.vue'
 import { useSync } from '@/composables/useSync'
 import { useSlideshow } from '@/composables/useSlideshow'
 import { useSettings } from '@/composables/useSettings'
+import { toggleFavorite } from '@/services/api'
 import type { Photo } from '@/types'
 
 // Settings (loaded from backend)
@@ -34,9 +35,17 @@ const newPhotoCount = computed(() => {
   ).length
 })
 
-// Slideshow control (uses filtered photos)
+// Active album filter
+const activeAlbum = ref('')
+const displayPhotos = computed(() => {
+  const base = filteredPhotos.value
+  if (!activeAlbum.value) return base
+  return base.filter((p) => p.album === activeAlbum.value)
+})
+
+// Slideshow control
 const { currentPhoto, currentIndex, totalPhotos, isPaused, orderedPhotos, next, previous, togglePause } =
-  useSlideshow(filteredPhotos, settings)
+  useSlideshow(displayPhotos, settings)
 
 // Track previous photo for crossfade
 const previousPhoto = ref<Photo | null>(currentPhoto.value)
@@ -69,6 +78,17 @@ function onTogglePause() {
 function onPersonFilter(name: string, type: 'person' | 'uploader') {
   activeFilter.value = name
   activeFilterType.value = type
+}
+
+async function onFavorite() {
+  const photo = currentPhoto.value
+  if (!photo) return
+  try {
+    const result = await toggleFavorite(photo.id)
+    photo.favorite = result.favorite
+  } catch {
+    // Silently fail — favorite is nice-to-have
+  }
 }
 
 // Enter fullscreen on first interaction
@@ -113,6 +133,7 @@ const brightnessFilter = computed(() => `brightness(${nightBrightness.value})`)
       @toggle-pause="onTogglePause"
       @show-overlay="showOverlay"
       @hide-overlay="hideOverlay"
+      @favorite="onFavorite"
     />
   </div>
 </template>

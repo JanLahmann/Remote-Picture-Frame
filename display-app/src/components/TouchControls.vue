@@ -17,21 +17,37 @@ const emit = defineEmits<{
   togglePause: []
   showOverlay: []
   hideOverlay: []
+  favorite: []
 }>()
 
 const touchStartX = ref(0)
 const touchStartY = ref(0)
 const touchStartTime = ref(0)
 let lastTapTime = 0
+let longPressTimer: ReturnType<typeof setTimeout> | null = null
+let longPressTriggered = false
 
 function onTouchStart(e: TouchEvent) {
   const touch = e.touches[0]
   touchStartX.value = touch.clientX
   touchStartY.value = touch.clientY
   touchStartTime.value = Date.now()
+  longPressTriggered = false
+
+  // Long press detection (800ms)
+  longPressTimer = setTimeout(() => {
+    longPressTriggered = true
+    emit('favorite')
+  }, 800)
 }
 
 function onTouchEnd(e: TouchEvent) {
+  if (longPressTimer) {
+    clearTimeout(longPressTimer)
+    longPressTimer = null
+  }
+  if (longPressTriggered) return // Already handled by long press
+
   const touch = e.changedTouches[0]
   const dx = touch.clientX - touchStartX.value
   const dy = touch.clientY - touchStartY.value

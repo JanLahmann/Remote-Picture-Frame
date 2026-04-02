@@ -41,6 +41,20 @@ export async function fetchUploaders(): Promise<string[]> {
   return data.uploaders || []
 }
 
+export async function toggleFavorite(photoId: string): Promise<{ id: string; favorite: boolean }> {
+  const params = new URLSearchParams({ action: 'favorite', id: photoId })
+  const resp = await fetch(`${API_BASE}/display_sync_api?${params}`, {
+    method: 'POST',
+    headers: headers(),
+  })
+
+  if (!resp.ok) {
+    throw new Error(`Favorite toggle failed: ${resp.status}`)
+  }
+
+  return resp.json()
+}
+
 export async function fetchSettings(): Promise<DisplaySettings> {
   const resp = await fetch(`${API_BASE}/display_sync_api?action=settings`, {
     headers: headers(),

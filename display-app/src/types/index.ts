@@ -17,6 +17,14 @@ export interface Photo {
   thumbnail_url: string
   tags: string[]
   people: string[]
+  favorite: boolean
+  album: string
+}
+
+export interface Album {
+  id: string
+  name: string
+  description: string
 }
 
 export interface SyncResponse {
@@ -32,6 +40,11 @@ export interface NightModeSettings {
   brightness: number // 0.0 - 1.0
 }
 
+export interface Birthday {
+  name: string
+  date: string  // "MM-DD" format
+}
+
 export interface DisplaySettings {
   slideshow_interval: number    // seconds between photos
   transition: 'fade' | 'slide' | 'kenburns'
@@ -41,6 +54,9 @@ export interface DisplaySettings {
   overlay_duration: number      // seconds (0 = always visible)
   night_mode: NightModeSettings
   sync_interval: number         // minutes
+  family_members: string[]
+  birthdays: Birthday[]
+  albums: Album[]
 }
 
 export const DEFAULT_SETTINGS: DisplaySettings = {
@@ -57,4 +73,7 @@ export const DEFAULT_SETTINGS: DisplaySettings = {
     brightness: 0.1,
   },
   sync_interval: 5,
+  family_members: [],
+  birthdays: [],
+  albums: [],
 }

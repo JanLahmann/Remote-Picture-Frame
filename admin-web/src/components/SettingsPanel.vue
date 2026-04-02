@@ -22,9 +22,14 @@ const settings = ref({
   },
   sync_interval: 5,
   family_members: [] as string[],
+  birthdays: [] as { name: string; date: string }[],
+  albums: [] as { id: string; name: string; description: string }[],
 })
 
 const newMemberName = ref('')
+const newBirthdayName = ref('')
+const newBirthdayDate = ref('')
+const newAlbumName = ref('')
 
 function addMember() {
   const name = newMemberName.value.trim()
@@ -40,6 +45,41 @@ function addMember() {
 
 function removeMember(index: number) {
   settings.value.family_members.splice(index, 1)
+}
+
+function addBirthday() {
+  const name = newBirthdayName.value.trim()
+  const date = newBirthdayDate.value.trim() // MM-DD
+  if (!name || !date) return
+  if (settings.value.birthdays.some(b => b.name === name)) {
+    newBirthdayName.value = ''
+    newBirthdayDate.value = ''
+    return
+  }
+  settings.value.birthdays.push({ name, date })
+  settings.value.birthdays.sort((a, b) => a.date.localeCompare(b.date))
+  newBirthdayName.value = ''
+  newBirthdayDate.value = ''
+}
+
+function removeBirthday(index: number) {
+  settings.value.birthdays.splice(index, 1)
+}
+
+function addAlbum() {
+  const name = newAlbumName.value.trim()
+  if (!name) return
+  const id = name.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-')
+  if (settings.value.albums.some(a => a.id === id)) {
+    newAlbumName.value = ''
+    return
+  }
+  settings.value.albums.push({ id, name, description: '' })
+  newAlbumName.value = ''
+}
+
+function removeAlbum(index: number) {
+  settings.value.albums.splice(index, 1)
 }
 
 async function loadSettings() {
@@ -195,6 +235,63 @@ onMounted(loadSettings)
             @keydown.enter.prevent="addMember"
           />
           <button type="button" class="add-btn" @click="addMember">Hinzufuegen</button>
+        </div>
+      </fieldset>
+
+      <!-- Birthdays -->
+      <fieldset>
+        <legend>Geburtstage</legend>
+        <p class="field-hint">An Geburtstagen werden Fotos der Person haeufiger gezeigt.</p>
+
+        <div class="member-list">
+          <div v-for="(b, i) in settings.birthdays" :key="b.name" class="member-item">
+            <span>{{ b.name }} ({{ b.date }})</span>
+            <button type="button" class="remove-btn" @click="removeBirthday(i)">&times;</button>
+          </div>
+          <div v-if="settings.birthdays.length === 0" class="empty-hint">
+            Noch keine Geburtstage eingetragen.
+          </div>
+        </div>
+
+        <div class="add-member">
+          <select v-model="newBirthdayName" style="flex: 1">
+            <option value="">Name waehlen...</option>
+            <option v-for="name in settings.family_members" :key="name" :value="name">{{ name }}</option>
+          </select>
+          <input
+            type="text"
+            v-model="newBirthdayDate"
+            placeholder="MM-TT"
+            maxlength="5"
+            style="width: 80px; flex: none"
+          />
+          <button type="button" class="add-btn" @click="addBirthday">Hinzufuegen</button>
+        </div>
+      </fieldset>
+
+      <!-- Albums -->
+      <fieldset>
+        <legend>Fotoalben</legend>
+        <p class="field-hint">Alben fuer thematische Slideshows (z.B. Urlaub, Weihnachten). Fotos werden im Admin-Bereich → Fotos einem Album zugeordnet.</p>
+
+        <div class="member-list">
+          <div v-for="(album, i) in settings.albums" :key="album.id" class="member-item">
+            <span>{{ album.name }}</span>
+            <button type="button" class="remove-btn" @click="removeAlbum(i)">&times;</button>
+          </div>
+          <div v-if="settings.albums.length === 0" class="empty-hint">
+            Noch keine Alben erstellt.
+          </div>
+        </div>
+
+        <div class="add-member">
+          <input
+            type="text"
+            v-model="newAlbumName"
+            placeholder="Albumname..."
+            @keydown.enter.prevent="addAlbum"
+          />
+          <button type="button" class="add-btn" @click="addAlbum">Erstellen</button>
         </div>
       </fieldset>
 

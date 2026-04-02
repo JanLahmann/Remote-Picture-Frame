@@ -127,7 +127,7 @@ def _handle_update(params: dict) -> dict:
         return {"statusCode": 400, "headers": CORS_HEADERS, "body": {"error": "Missing 'id'"}}
 
     body = _parse_body(params)
-    allowed_fields = {"caption", "description", "tags", "date_taken", "location", "uploaded_by"}
+    allowed_fields = {"caption", "description", "tags", "date_taken", "location", "uploaded_by", "album", "favorite", "people"}
     updates = {k: v for k, v in body.items() if k in allowed_fields}
 
     if not updates:
@@ -252,6 +252,8 @@ def _handle_settings_get(params: dict) -> dict:
         },
         "sync_interval": 5,
         "family_members": [],
+        "birthdays": [],
+        "albums": [],
     }
 
     try:

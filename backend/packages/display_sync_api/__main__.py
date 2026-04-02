@@ -17,12 +17,12 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
 from shared import config
 from shared.onedrive import get_download_url, get_file_thumbnail_url
-from shared.metadata import list_photos, get_photo
+from shared.metadata import list_photos, get_photo, update_photo
 
 # CORS headers for PWA access
 CORS_HEADERS = {
     "Access-Control-Allow-Origin": "*",  # Restrict to your domain in production
-    "Access-Control-Allow-Methods": "GET, OPTIONS",
+    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
     "Access-Control-Allow-Headers": "Authorization, Content-Type",
     "Content-Type": "application/json",
 }
@@ -55,6 +55,10 @@ def main(params: dict) -> dict:
         return _handle_photo(params)
     elif action == "uploaders":
         return _handle_uploaders(params)
+    elif action == "favorite":
+        return _handle_favorite(params)
+    elif action == "albums":
+        return _handle_albums(params)
     elif action == "settings":
         return _handle_settings(params)
     else:
@@ -97,6 +101,8 @@ def _handle_sync(params: dict) -> dict:
             "thumbnail_url": photo.get("thumbnail_url", ""),
             "tags": photo.get("tags", []),
             "people": photo.get("people", []),
+            "favorite": photo.get("favorite", False),
+            "album": photo.get("album", ""),
         }
 
         # Get fresh download URL from OneDrive
@@ -167,6 +173,45 @@ def _handle_photo(params: dict) -> dict:
     }
 
 
+def _handle_favorite(params: dict) -> dict:
+    """Toggle favorite status of a photo (called from display on long-press)."""
+    doc_id = params.get("id")
+    if not doc_id:
+        return {"statusCode": 400, "headers": CORS_HEADERS, "body": {"error": "Missing 'id'"}}
+
+    try:
+        photo = get_photo(doc_id)
+        new_fav = not photo.get("favorite", False)
+        update_photo(doc_id, {"favorite": new_fav})
+        return {
+            "statusCode": 200,
+            "headers": CORS_HEADERS,
+            "body": {"id": doc_id, "favorite": new_fav},
+        }
+    except Exception as e:
+        return {"statusCode": 500, "headers": CORS_HEADERS, "body": {"error": str(e)}}
+
+
+def _handle_albums(params: dict) -> dict:
+    """Return the list of albums from settings."""
+    import json
+    from shared.onedrive import list_folder as od_list_folder, get_file_content as od_get_content
+
+    try:
+        folder_path = config.get("ONEDRIVE_FOLDER_PATH", "/FamilyFrame/photos").replace("/photos", "/config")
+        folder = od_list_folder(folder_path)
+        for item in folder.get("items", []):
+            if item.get("name") == "settings.json":
+                content = od_get_content(item["id"])
+                settings = json.loads(content)
+                albums = settings.get("albums", [])
+                return {"statusCode": 200, "headers": CORS_HEADERS, "body": {"albums": albums}}
+    except Exception:
+        pass
+
+    return {"statusCode": 200, "headers": CORS_HEADERS, "body": {"albums": []}}
+
+
 def _handle_uploaders(params: dict) -> dict:
     """Return a list of unique uploader names."""
     photos = list_photos(visible_only=True, limit=9999)
@@ -201,6 +246,8 @@ def _handle_settings(params: dict) -> dict:
         },
         "sync_interval": 5,
         "family_members": [],
+        "birthdays": [],
+        "albums": [],
     }
 
     # Try to load settings from OneDrive

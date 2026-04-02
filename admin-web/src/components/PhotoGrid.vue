@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
-import { listPhotos, toggleVisibility, deletePhoto, updatePhoto } from '@/services/api'
+import { listPhotos, toggleVisibility, deletePhoto, updatePhoto, getSettings } from '@/services/api'
 
 interface Photo {
   id: string
@@ -14,7 +14,16 @@ interface Photo {
   upload_channel: string
   visible: boolean
   tags: string[]
+  people: string[]
+  favorite: boolean
+  album: string
   thumbnail_url: string
+}
+
+interface Album {
+  id: string
+  name: string
+  description: string
 }
 
 const photos = ref<Photo[]>([])
@@ -23,7 +32,9 @@ const error = ref('')
 const editingPhoto = ref<Photo | null>(null)
 const editCaption = ref('')
 const editDescription = ref('')
+const editAlbum = ref('')
 const filterChannel = ref('all')
+const albums = ref<Album[]>([])
 
 async function loadPhotos() {
   loading.value = true
@@ -71,6 +82,7 @@ function startEdit(photo: Photo) {
   editingPhoto.value = photo
   editCaption.value = photo.caption
   editDescription.value = photo.description
+  editAlbum.value = photo.album || ''
 }
 
 function cancelEdit() {
@@ -83,9 +95,11 @@ async function saveEdit() {
     await updatePhoto(editingPhoto.value.id, {
       caption: editCaption.value,
       description: editDescription.value,
+      album: editAlbum.value,
     })
     editingPhoto.value.caption = editCaption.value
     editingPhoto.value.description = editDescription.value
+    editingPhoto.value.album = editAlbum.value
     editingPhoto.value = null
   } catch (e: any) {
     error.value = e.message
@@ -109,7 +123,17 @@ function channelLabel(ch: string): string {
   return labels[ch] || ch
 }
 
-onMounted(loadPhotos)
+async function loadAlbums() {
+  try {
+    const result = await getSettings()
+    albums.value = result.albums || []
+  } catch { /* ignore */ }
+}
+
+onMounted(() => {
+  loadPhotos()
+  loadAlbums()
+})
 </script>
 
 <template>
@@ -149,6 +173,7 @@ onMounted(loadPhotos)
           />
           <div v-else class="placeholder">Kein Bild</div>
           <span v-if="!photo.visible" class="hidden-badge">Versteckt</span>
+          <span v-if="photo.favorite" class="fav-badge">&hearts;</span>
           <span class="channel-badge">{{ channelLabel(photo.upload_channel) }}</span>
         </div>
 
@@ -159,6 +184,10 @@ onMounted(loadPhotos)
             <span v-if="photo.uploaded_by">{{ photo.uploaded_by }}</span>
             <span v-if="photo.date_taken">{{ formatDate(photo.date_taken) }}</span>
             <span v-if="photo.location?.name">{{ photo.location.name }}</span>
+          </div>
+          <div class="meta" v-if="photo.people?.length || photo.album">
+            <span v-if="photo.people?.length" class="tag">{{ photo.people.join(', ') }}</span>
+            <span v-if="photo.album" class="tag album-tag">{{ albums.find(a => a.id === photo.album)?.name || photo.album }}</span>
           </div>
         </div>
 
@@ -183,6 +212,13 @@ onMounted(loadPhotos)
         <div class="form-field">
           <label>Beschreibung</label>
           <textarea v-model="editDescription" rows="3"></textarea>
+        </div>
+        <div class="form-field" v-if="albums.length > 0">
+          <label>Album</label>
+          <select v-model="editAlbum">
+            <option value="">Kein Album</option>
+            <option v-for="a in albums" :key="a.id" :value="a.id">{{ a.name }}</option>
+          </select>
         </div>
         <div class="modal-actions">
           <button @click="cancelEdit">Abbrechen</button>
@@ -236,10 +272,18 @@ onMounted(loadPhotos)
   position: absolute; top: 8px; left: 8px; background: rgba(231,76,60,0.9);
   color: #fff; font-size: 0.75rem; padding: 2px 8px; border-radius: 4px;
 }
+.fav-badge {
+  position: absolute; top: 8px; left: 8px; color: #e74c64; font-size: 1rem;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+}
 .channel-badge {
   position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.7);
   color: #ccc; font-size: 0.7rem; padding: 2px 8px; border-radius: 4px;
 }
+.tag {
+  font-size: 0.7rem; background: #242442; padding: 1px 6px; border-radius: 4px; color: #aaa;
+}
+.album-tag { background: rgba(160,120,240,0.2); color: #b09ae0; }
 .card-body { padding: 0.75rem; }
 .caption { font-weight: 600; font-size: 0.95rem; margin: 0 0 0.25rem; }
 .desc { font-size: 0.85rem; color: #aaa; margin: 0 0 0.4rem; }
