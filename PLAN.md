@@ -566,8 +566,32 @@ Automatic identification of who is **in** each photo, so grandma can filter by p
   **Integration with display PWA:**
   - No code changes needed — our PWA runs in any browser
   - Screen Wake Lock API works in Chromium-based browsers on streaming sticks
-  - Touch controls not available (use TV remote for basic navigation, or skip — auto-slideshow is the primary mode)
   - Night mode dimming works via CSS (or HDMI-CEC power off)
+
+- **TV remote navigation (for Smart TV / streaming stick deployments)**
+  Grandma uses her existing TV remote to navigate the PWA — no touchscreen, no smartphone, no extra remote needed. HDMI-CEC passes the TV remote's directional pad and OK/Back buttons through to the streaming stick's browser as standard keyboard events. This works out of the box on most Samsung (and other) TV remotes.
+
+  **Key mapping:**
+  | TV Remote Button | PWA Action |
+  |---|---|
+  | Left / Right | Previous / next photo |
+  | Up | Open navigation menu (person filter / albums) |
+  | Down | Close menu / hide overlay |
+  | OK / Enter | Select highlighted item in menu |
+  | Back | Return to slideshow from menu |
+
+  **Navigation menu** (full-screen overlay, large text readable from couch distance):
+  - List of people (from `settings.family_members` or recognized faces)
+  - List of albums
+  - "Alle Fotos" option to clear any filter
+  - Arrow up/down highlights items, OK selects, Back dismisses
+  - Looks and feels like a standard TV menu — no learning curve for grandma
+
+  **Implementation:**
+  - Add `keydown` event listeners to the display PWA alongside existing touch handlers
+  - New `NavigationMenu.vue` component: full-screen overlay with focus-based item selection
+  - Only directional pad + OK + Back are needed — these are the most reliably passed through HDMI-CEC across TV brands
+  - Same PWA codebase, no separate build — menu simply doesn't appear on touch devices unless invoked via remote
 
 ---
 
