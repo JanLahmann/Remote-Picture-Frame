@@ -10,9 +10,11 @@ A digital picture frame for grandma. Family members (~20 people) upload photos f
 
 Three approaches, from zero-code to fully custom. They can be adopted incrementally — start with Path A, evolve to B or C if needed.
 
-### Path A: Pure Google Photos (no code, deploy today)
+### Path A: Zero-code photo frame (deploy today)
 
-**Setup:** Chromecast with Google TV (~€35) plugged into grandma's Samsung TV. Google Photos Ambient Mode as screensaver, showing a shared album.
+Two hardware options — both plug into grandma's existing Samsung TV via HDMI, controlled with her existing TV remote (HDMI-CEC).
+
+#### Option 1: Chromecast with Google TV (~€35) + Google Photos
 
 **How it works:**
 1. Create a Google account (e.g. `familyframe@gmail.com`)
@@ -23,7 +25,7 @@ Three approaches, from zero-code to fully custom. They can be adopted incrementa
 
 **What you get for free:**
 - Slideshow on TV (ambient mode)
-- Family uploads via Google Photos app or shared link
+- Family uploads via Google Photos app or shared link (no account needed to add via link)
 - Face recognition (Google's built-in, excellent)
 - Person albums (auto-grouped by Google)
 - "Memories" / "On this day" (in Google Photos app)
@@ -32,7 +34,42 @@ Three approaches, from zero-code to fully custom. They can be adopted incrementa
 - Multiple event albums (family creates them in Google Photos)
 - Zero maintenance
 
-**What you don't get:**
+**Storage:** 15 GB free (shared with Gmail/Drive), €2/month for 100 GB if needed
+
+#### Option 2: Amazon Fire TV Stick (~€25-35) + Amazon Photos
+
+**How it works:**
+1. Create an Amazon account (or use existing Prime account)
+2. Create a shared album in Amazon Photos (or use "Family Vault" with Prime)
+3. Invite family members — they install Amazon Photos app and add photos
+4. On Fire TV: Settings → Display → Screensaver → Amazon Photos → select the shared album
+5. Done. Same result.
+
+**What you get for free:**
+- Slideshow on TV (screensaver)
+- Family uploads via Amazon Photos app
+- Face recognition (built-in)
+- Shared albums / Family Vault
+- Alexa voice control ("Alexa, show my photos")
+- Zero maintenance
+
+**Storage:** 5 GB free, **unlimited with Amazon Prime** (huge advantage if family already has Prime)
+
+#### Chromecast vs Fire TV Stick
+
+| | Chromecast + Google Photos | Fire TV Stick + Amazon Photos |
+|---|---|---|
+| **Price** | ~€35 | ~€25-35 (often on sale) |
+| **Free storage** | 15 GB | 5 GB (unlimited with Prime) |
+| **Upload without account** | Yes (shared link) | No (need Amazon account + app) |
+| **Upload friction for 20 people** | Low (just a link) | Higher (everyone needs Amazon app) |
+| **Face recognition** | Excellent | Good |
+| **Voice control** | Google Assistant | Alexa |
+| **Best if** | Mixed family, no Prime | Family has Amazon Prime |
+
+**Recommendation:** Chromecast + Google Photos for most families (lowest upload friction). Fire TV Stick + Amazon Photos if the family already has Prime (unlimited free storage, cheaper hardware).
+
+#### What you don't get with either option:
 - Smart rotation (weighted by newness, favorites, birthdays) — random only
 - WhatsApp as upload channel
 - Custom overlay with badges ("Neu", "Vor 3 Jahren", birthday highlights)
@@ -40,13 +77,13 @@ Three approaches, from zero-code to fully custom. They can be adopted incrementa
 - Remote admin configuration
 - Upload via simple web page with PIN (family needs Google Photos app or link)
 
-**Cost:** ~€35 one-time (Chromecast) + €0/month (15 GB free, €2/month for 100 GB if needed)
+**Cost:** ~€25-35 one-time (streaming stick) + €0/month
 
 **Effort:** 15 minutes setup. Zero code. Zero maintenance.
 
 ### Path B: Lightweight custom PWA on Google Photos (minimal code)
 
-**Setup:** Same Chromecast hardware. Our custom PWA runs in a kiosk browser, but uses Google Photos as the storage backend instead of OneDrive.
+**Setup:** Chromecast or Fire TV Stick plugged into grandma's TV. Our custom PWA runs in a kiosk browser (Chrome on Chromecast, Silk or sideloaded Fully Kiosk on Fire TV), but uses Google Photos as the storage backend instead of OneDrive. Both sticks work equally well for running our PWA.
 
 **What we build (thin layer):**
 - Display PWA with smart rotation algorithm, custom overlays, birthday highlights
@@ -101,7 +138,7 @@ Three approaches, from zero-code to fully custom. They can be adopted incrementa
 - Multiple upload channels (WhatsApp, web, OneDrive, email)
 - Complete control over every aspect
 
-**Cost:** ~€35-270 one-time (display device) + €0/month (all free tiers)
+**Cost:** ~€25-270 one-time (streaming stick or display device) + €0/month (all free tiers)
 
 **Effort:** ~6-8 weeks development. Full maintenance responsibility.
 
