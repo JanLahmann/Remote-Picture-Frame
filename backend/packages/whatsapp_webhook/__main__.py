@@ -21,7 +21,7 @@ import requests as http_requests
 
 from shared import config
 from shared.onedrive import upload_file, get_file_thumbnail_url
-from shared.metadata import create_photo_metadata, ensure_database
+from shared.metadata import create_photo_metadata, get_photo, update_photo, ensure_database
 from shared.exif_utils import extract_exif
 from shared.geocoding import reverse_geocode
 
@@ -112,17 +112,13 @@ def _handle_notification(params: dict) -> dict:
 
 
 def _process_message(message: dict, contacts: list) -> dict | None:
-    """Process a single incoming WhatsApp message."""
+    """Process a single incoming WhatsApp message.
+
+    Handles two message types:
+    - image: Download, process, upload to OneDrive, send confirmation
+    - location: Attach location to the sender's most recent photo
+    """
     msg_type = message.get("type", "")
-
-    # We only care about image messages
-    if msg_type != "image":
-        return None
-
-    image_info = message.get("image", {})
-    media_id = image_info.get("id")
-    if not media_id:
-        return None
 
     # Get sender info
     sender_wa_id = message.get("from", "")
@@ -133,7 +129,21 @@ def _process_message(message: dict, contacts: list) -> dict | None:
             sender_name = profile.get("name", "")
             break
 
-    # Caption from the image message
+    if msg_type == "image":
+        return _process_image(message, sender_wa_id, sender_name)
+    elif msg_type == "location":
+        return _process_location(message, sender_wa_id, sender_name)
+    else:
+        return None
+
+
+def _process_image(message: dict, sender_wa_id: str, sender_name: str) -> dict | None:
+    """Process an incoming image message."""
+    image_info = message.get("image", {})
+    media_id = image_info.get("id")
+    if not media_id:
+        return None
+
     caption = image_info.get("caption", "")
 
     # Download the image from Meta's servers
@@ -145,6 +155,10 @@ def _process_message(message: dict, contacts: list) -> dict | None:
     # Try to extract EXIF data (WhatsApp strips most/all EXIF data,
     # so date_taken, GPS, and camera info will usually be empty)
     exif_data = extract_exif(image_bytes)
+
+    # WhatsApp strips EXIF date — use current time as date_taken
+    from datetime import datetime, timezone
+    date_taken = exif_data.get("date_taken") or datetime.now(timezone.utc).isoformat()
 
     # Reverse geocode if GPS data present (unlikely from WhatsApp)
     location = exif_data.get("location")
@@ -158,7 +172,6 @@ def _process_message(message: dict, contacts: list) -> dict | None:
     people = recognize_people(image_bytes)
 
     # Generate filename
-    from datetime import datetime, timezone
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
     name_hash = hashlib.md5(image_bytes[:1024]).hexdigest()[:6]
     filename = f"wa_{timestamp}_{name_hash}.jpg"
@@ -181,18 +194,104 @@ def _process_message(message: dict, contacts: list) -> dict | None:
         onedrive_item_id=item_id,
         filename=filename,
         caption=caption,
-        date_taken=exif_data.get("date_taken"),
+        date_taken=date_taken,
         location=location,
-        uploaded_by=sender_name or sender_wa_id,
+        uploaded_by=uploader,
         upload_channel="whatsapp",
         thumbnail_url=thumbnail_url,
         people=people,
     )
 
-    # Send confirmation reply to sender
+    # Remember this photo as the sender's latest (for location follow-up)
+    _save_last_photo_id(sender_wa_id, doc["_id"])
+
+    # Send confirmation reply
     _send_confirmation(sender_wa_id, sender_name, caption, people, location)
 
     return {"doc_id": doc["_id"], "filename": filename, "from": sender_name}
+
+
+def _process_location(message: dict, sender_wa_id: str, sender_name: str) -> dict | None:
+    """Process a location message — attach it to the sender's most recent photo."""
+    loc_info = message.get("location", {})
+    lat = loc_info.get("latitude")
+    lon = loc_info.get("longitude")
+    loc_name = loc_info.get("name", "") or loc_info.get("address", "")
+
+    if lat is None or lon is None:
+        return None
+
+    # Reverse geocode for a friendly name
+    if not loc_name:
+        place = reverse_geocode(lat, lon)
+        if place:
+            loc_name = place
+
+    location = {"lat": lat, "lon": lon}
+    if loc_name:
+        location["name"] = loc_name
+
+    # Find the sender's most recent photo and update it
+    last_photo_id = _get_last_photo_id(sender_wa_id)
+    if not last_photo_id:
+        _send_reply(sender_wa_id, "Schicke erst ein Foto, dann den Standort dazu.")
+        return None
+
+    try:
+        update_photo(last_photo_id, {"location": location})
+        # Clear the stored reference so the same location isn't applied twice
+        _clear_last_photo_id(sender_wa_id)
+
+        reply = f"Standort hinzugefuegt: {loc_name or f'{lat:.4f}, {lon:.4f}'}"
+        _send_reply(sender_wa_id, reply)
+        return {"photo_id": last_photo_id, "location": location}
+    except Exception as e:
+        _send_reply(sender_wa_id, "Fehler beim Speichern des Standorts.")
+        return {"error": str(e)}
+
+
+def _save_last_photo_id(wa_id: str, photo_doc_id: str) -> None:
+    """Store the last uploaded photo ID for a WhatsApp user in Cloudant."""
+    from shared.metadata import _get_client as get_client, _db_name
+    client = get_client()
+    db = _db_name()
+    doc_id = f"_local/wa_last_photo_{wa_id}"
+
+    doc = {"_id": doc_id, "photo_id": photo_doc_id}
+    try:
+        existing = client.get_document(db=db, doc_id=doc_id).get_result()
+        doc["_rev"] = existing["_rev"]
+    except Exception:
+        pass
+
+    try:
+        client.put_document(db=db, doc_id=doc_id, document=doc).get_result()
+    except Exception:
+        pass
+
+
+def _get_last_photo_id(wa_id: str) -> str | None:
+    """Retrieve the last uploaded photo ID for a WhatsApp user."""
+    from shared.metadata import _get_client as get_client, _db_name
+    try:
+        client = get_client()
+        doc = client.get_document(db=_db_name(), doc_id=f"_local/wa_last_photo_{wa_id}").get_result()
+        return doc.get("photo_id")
+    except Exception:
+        return None
+
+
+def _clear_last_photo_id(wa_id: str) -> None:
+    """Remove the stored last photo reference after location is attached."""
+    from shared.metadata import _get_client as get_client, _db_name
+    try:
+        client = get_client()
+        db = _db_name()
+        doc_id = f"_local/wa_last_photo_{wa_id}"
+        doc = client.get_document(db=db, doc_id=doc_id).get_result()
+        client.delete_document(db=db, doc_id=doc_id, rev=doc["_rev"]).get_result()
+    except Exception:
+        pass
 
 
 def _send_confirmation(
@@ -216,8 +315,11 @@ def _send_confirmation(
     elif location and location.get("lat"):
         lines.append(f"Ort: {location['lat']:.2f}, {location['lon']:.2f}")
     else:
-        lines.append("Tipp: WhatsApp entfernt leider den Standort aus Fotos. "
-                      "Fuer Standort-Anzeige nutze die Upload-Webseite.")
+        # WhatsApp strips GPS from photos — ask user to share location separately
+        lines.append("")
+        lines.append("Moechtest du den Ort hinzufuegen? "
+                      "Schicke einfach deinen Standort "
+                      "(Bueroklammer > Standort > Standort senden).")
 
     _send_reply(recipient_wa_id, "\n".join(lines))
 
