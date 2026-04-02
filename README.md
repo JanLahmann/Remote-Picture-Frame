@@ -21,7 +21,7 @@ WhatsApp ──→ Twilio ────────→                           
 **Familienmitglieder** (bis zu 20+) laden Fotos ueber drei Wege hoch:
 - **OneDrive App** — Fotos direkt in den geteilten Ordner laden
 - **E-Mail** — Foto als Anhang an eine dedizierte Adresse schicken (Betreff = Bildunterschrift)
-- **WhatsApp** — Foto an eine Twilio-Nummer senden (Nachricht = Bildunterschrift)
+- **WhatsApp** — Foto an eine WhatsApp-Nummer senden (Nachricht = Bildunterschrift)
 
 **Omas Bilderrahmen** zeigt die Fotos als Slideshow — vollautomatisch, ohne jede Interaktion. Optional: Touch-Steuerung (tippen, wischen, pausieren).
 
@@ -36,7 +36,7 @@ WhatsApp ──→ Twilio ────────→                           
 - **Fernwartung**: Fully Kiosk Browser (Android) + TeamViewer fuer Remote-Zugriff
 - **Multi-Plattform**: Laeuft auf Android-Tablets, iPads und Raspberry Pi (als PWA)
 - **EXIF-Extraktion**: Datum, GPS-Koordinaten und Kamera werden automatisch aus Fotos gelesen
-- **Nahezu kostenlos**: ~0-5 EUR/Monat (IBM Cloud + OneDrive Free Tiers)
+- **Komplett kostenlos**: 0 EUR/Monat (alle Dienste auf Free Tiers, inkl. WhatsApp)
 
 ## Tech Stack
 
@@ -46,7 +46,7 @@ WhatsApp ──→ Twilio ────────→                           
 | Backend | IBM Cloud Functions (Python, serverless) |
 | Metadaten-DB | IBM Cloudant (CouchDB, Lite Plan) |
 | E-Mail-Eingang | Power Automate (in M365 enthalten) |
-| WhatsApp | Twilio WhatsApp Business API |
+| WhatsApp | Meta WhatsApp Cloud API (free tier) |
 | Display-App | Progressive Web App (Vue.js 3, TypeScript, Vite) |
 | PWA-Hosting | IBM Cloud Object Storage |
 

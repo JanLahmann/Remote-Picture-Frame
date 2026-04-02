@@ -18,7 +18,7 @@ OneDrive App ──────────────────────�
 Email ──→ Power Automate ──→ Save to OneDrive ────→ /Family               - Raspberry Pi
           (M365 included)    + extract caption        Frame/
                                                                    ┌──────────────┐
-WhatsApp ──→ Twilio ──→ IBM Cloud Function ──→ OneDrive           │  PWA          │
+WhatsApp ──→ Meta Cloud API ──→ IBM Cloud Function ──→ OneDrive           │  PWA          │
 (Phase 2)    Webhook     (process + save)                         │  Slideshow    │
                                                                    │  + Captions   │
                                                 Metadata DB        │  + Date/Loc   │
@@ -108,15 +108,26 @@ Each photo gets a metadata document:
 
 ### 2.5 Upload Channel: WhatsApp (Phase 4)
 
-- Dedicated WhatsApp number via **Twilio WhatsApp Business API**
+- Dedicated WhatsApp number via **Meta WhatsApp Cloud API** (free tier)
 - Family members send photos (and optional caption as message text) to this number
-- Twilio webhook → **IBM Cloud Function**:
-  1. Download the media from Twilio
-  2. Upload to OneDrive `/FamilyFrame/photos/`
-  3. Extract caption from message text
-  4. Create metadata record
-- **Cost**: Twilio WhatsApp is ~€0.005/message received + phone number ~€1/month
-- **Alternative** (lower cost, more fragile): WhatsApp Web automation via a headless browser on a small VM. Not recommended for reliability.
+- Meta Cloud API webhook → **IBM Cloud Function**:
+  1. Verify webhook signature (security)
+  2. Download the media from Meta's servers (using the media URL + access token)
+  3. Upload to OneDrive `/FamilyFrame/photos/`
+  4. Extract caption from message text
+  5. Create metadata record
+  6. Optional: send a confirmation reply within the 24h conversation window
+- **Cost**: €0/month (free tier: 1,000 service conversations/month — more than enough for a family of 20)
+- **Setup requirements**:
+  - Personal Facebook account (no business needed)
+  - Meta Business Portfolio (free, at business.facebook.com)
+  - Meta Developer App (free, at developers.facebook.com)
+  - A phone number for WhatsApp registration (prepaid SIM, ~€5 one-time)
+- **Why Meta Cloud API over Twilio?**
+  - Free vs. ~€2-5/month with Twilio
+  - Official API, same reliability
+  - Direct from Meta — no middleman
+  - 1,000 free conversations/month (user-initiated = family sends photo = free)
 
 ### 2.6 Backend: IBM Cloud Functions (Serverless)
 
@@ -125,7 +136,7 @@ All backend logic runs as IBM Cloud Functions (Python, based on Apache OpenWhisk
 | Function | Trigger | Purpose |
 |----------|---------|---------|
 | `process_new_photo` | HTTP (Graph API webhook) | Extract EXIF, create metadata, generate thumbnail |
-| `whatsapp_webhook` | HTTP (Twilio webhook) | Receive WhatsApp photos, save to OneDrive |
+| `whatsapp_webhook` | HTTP (Meta WhatsApp Cloud API webhook) | Receive WhatsApp photos, save to OneDrive |
 | `admin_api` | HTTP | CRUD for metadata, visibility toggle, settings |
 | `display_sync_api` | HTTP | Serve photo list + metadata to display, delta sync |
 | `refresh_subscription` | IBM Cloud cron trigger (daily) | Renew Graph API change notification subscriptions |
@@ -218,11 +229,11 @@ Simple **web app** (Vue.js, same stack as display app), hosted on IBM Cloud Obje
 | Backend | IBM Cloud Functions (Python) | €0 (free tier) |
 | Static Hosting | IBM Cloud Object Storage (PWA + Admin) | €0 (lite tier) |
 | Email Ingestion | Power Automate (included in M365) | €0 |
-| WhatsApp (Phase 4) | Twilio WhatsApp API | ~€2-5/month |
+| WhatsApp (Phase 4) | Meta WhatsApp Cloud API (free tier) | €0 (1,000 conv/month free) |
 | Display App | PWA (TypeScript + Vue.js 3) | €0 |
 | Display Hardware | Android tablet / iPad / Raspberry Pi | €60-300 one-time |
 
-**Estimated recurring cost: €0-5/month** (essentially free until WhatsApp is added)
+**Estimated recurring cost: €0/month** (all services on free tiers, including WhatsApp)
 
 ---
 
@@ -282,7 +293,7 @@ chromium-browser --kiosk --noerrdialogs --disable-translate \
 - **OneDrive isolation**: Dedicated account or scoped shared folder — family members never see other OneDrive content (see Section 2.1)
 - **IBM Cloud Functions**: Secured with API keys (not publicly accessible without token)
 - **Display API access**: Authenticated via a device token stored on the display device
-- **No photos on third-party servers** (except Twilio for WhatsApp — transient, auto-deleted)
+- **No photos on third-party servers** (WhatsApp media is hosted by Meta temporarily, downloaded by our function, then only stored in OneDrive)
 - **Email**: Shared mailbox in M365 — no external email provider needed
 - **Admin access**: Protected by Microsoft SSO (M365 account)
 - **PWA served over HTTPS**: IBM Cloud Object Storage with custom domain + TLS
@@ -383,10 +394,13 @@ Grandma's display must be fully manageable without physical access.
 
 ### Phase 4: WhatsApp Upload — ~1-2 weeks
 
-9. **WhatsApp channel**
-   - Set up Twilio account + WhatsApp sender
-   - Implement `whatsapp_webhook` IBM Cloud Function
-   - Share WhatsApp number with family
+9. **WhatsApp channel (Meta WhatsApp Cloud API — free)**
+   - Create Meta Business Portfolio (free, no real business needed)
+   - Create Meta Developer App + add WhatsApp product
+   - Register a phone number (prepaid SIM, ~€5 one-time)
+   - Configure webhook URL → IBM Cloud Function `whatsapp_webhook`
+   - Implement `whatsapp_webhook`: verify signature, download media, save to OneDrive
+   - Test with family, share the WhatsApp number
 
 ### Phase 5: Admin Interface — ~2 weeks
 
@@ -500,4 +514,4 @@ Remote-Picture-Frame/
 - Family member takes a photo → uploads via OneDrive/Email/WhatsApp → photo appears on grandma's frame within 5 minutes.
 - A second family member wants a frame → just open the URL on any device. Done.
 - System runs maintenance-free for months at a time.
-- Monthly cost stays under €5.
+- Monthly cost: €0 (all free tiers).
