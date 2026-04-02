@@ -55,7 +55,12 @@ const formattedDate = computed(() => {
 })
 
 const locationName = computed(() => {
-  return props.photo?.location?.name || ''
+  const loc = props.photo?.location
+  if (!loc) return ''
+  if (loc.name) return loc.name
+  // Fallback: show rounded coordinates
+  if (loc.lat && loc.lon) return `${loc.lat.toFixed(2)}, ${loc.lon.toFixed(2)}`
+  return ''
 })
 
 defineExpose({ show, hide })

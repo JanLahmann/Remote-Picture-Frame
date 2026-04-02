@@ -84,7 +84,7 @@ deploy_function() {
 }
 
 # Deploy functions
-FUNCTIONS=("process_new_photo" "display_sync_api" "refresh_subscription" "admin_api" "whatsapp_webhook")
+FUNCTIONS=("process_new_photo" "display_sync_api" "upload_api" "refresh_subscription" "admin_api" "whatsapp_webhook")
 
 if [ $# -gt 0 ]; then
     # Deploy only specified function(s)

@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#1a1a2e" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <title>FamilyFrame - Foto hochladen</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f0f1a;
+      --surface: #1a1a2e;
+      --surface-hover: #242442;
+      --primary: #4ecca3;
+      --primary-hover: #3db88f;
+      --text: #e0e0e0;
+      --text-muted: #888;
+      --danger: #e74c3c;
+      --radius: 12px;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      min-height: 100dvh;
+      padding: 1rem;
+    }
+
+    .container {
+      max-width: 520px;
+      margin: 0 auto;
+    }
+
+    /* Header */
+    .header {
+      text-align: center;
+      padding: 1.5rem 0 1rem;
+    }
+
+    .header h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    .header p {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      margin-top: 0.3rem;
+    }
+
+    /* PIN screen */
+    .pin-screen {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.5rem;
+      padding: 3rem 1rem;
+    }
+
+    .pin-screen h2 {
+      font-size: 1.2rem;
+      font-weight: 600;
+    }
+
+    .pin-input {
+      font-size: 2rem;
+      text-align: center;
+      letter-spacing: 0.5rem;
+      width: 200px;
+      padding: 0.8rem;
+      background: var(--surface);
+      border: 2px solid var(--surface-hover);
+      border-radius: var(--radius);
+      color: var(--text);
+      outline: none;
+    }
+
+    .pin-input:focus {
+      border-color: var(--primary);
+    }
+
+    .pin-error {
+      color: var(--danger);
+      font-size: 0.9rem;
+      display: none;
+    }
+
+    /* Upload form */
+    .upload-form {
+      display: none;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .upload-form.active {
+      display: flex;
+    }
+
+    /* Drop zone */
+    .drop-zone {
+      border: 2px dashed #444;
+      border-radius: var(--radius);
+      padding: 2rem 1rem;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      position: relative;
+    }
+
+    .drop-zone:hover, .drop-zone.dragover {
+      border-color: var(--primary);
+      background: rgba(78, 204, 163, 0.05);
+    }
+
+    .drop-zone-icon {
+      font-size: 2.5rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .drop-zone-text {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+    }
+
+    .drop-zone-text strong {
+      color: var(--primary);
+    }
+
+    .drop-zone input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+    }
+
+    /* Preview grid */
+    .previews {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+      gap: 0.5rem;
+    }
+
+    .preview-item {
+      position: relative;
+      aspect-ratio: 1;
+      border-radius: 8px;
+      overflow: hidden;
+      background: var(--surface);
+    }
+
+    .preview-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .preview-remove {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: rgba(0,0,0,0.7);
+      color: #fff;
+      border: none;
+      font-size: 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+    }
+
+    /* Form fields */
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+    }
+
+    .field label {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .field input, .field textarea {
+      padding: 0.75rem;
+      background: var(--surface);
+      border: 1px solid #333;
+      border-radius: var(--radius);
+      color: var(--text);
+      font-size: 1rem;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .field input:focus, .field textarea:focus {
+      border-color: var(--primary);
+    }
+
+    .field textarea {
+      resize: vertical;
+      min-height: 60px;
+    }
+
+    .field .hint {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    /* Submit button */
+    .submit-btn {
+      padding: 1rem;
+      background: var(--primary);
+      color: #000;
+      border: none;
+      border-radius: var(--radius);
+      font-size: 1.1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+    }
+
+    .submit-btn:hover {
+      background: var(--primary-hover);
+    }
+
+    .submit-btn:active {
+      transform: scale(0.98);
+    }
+
+    .submit-btn:disabled {
+      background: #444;
+      color: #888;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* Progress */
+    .progress-bar {
+      display: none;
+      height: 6px;
+      background: var(--surface);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .progress-bar.active {
+      display: block;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: var(--primary);
+      border-radius: 3px;
+      transition: width 0.3s;
+      width: 0%;
+    }
+
+    /* Status message */
+    .status {
+      text-align: center;
+      padding: 0.5rem;
+      border-radius: var(--radius);
+      font-size: 0.95rem;
+      display: none;
+    }
+
+    .status.success {
+      display: block;
+      background: rgba(78, 204, 163, 0.15);
+      color: var(--primary);
+    }
+
+    .status.error {
+      display: block;
+      background: rgba(231, 76, 60, 0.15);
+      color: var(--danger);
+    }
+
+    /* Footer */
+    .footer {
+      text-align: center;
+      padding: 2rem 0 1rem;
+      color: var(--text-muted);
+      font-size: 0.8rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>FamilyFrame</h1>
+      <p>Fotos fuer Omas Bilderrahmen</p>
+    </div>
+
+    <!-- PIN Screen -->
+    <div class="pin-screen" id="pinScreen">
+      <h2>Familien-PIN eingeben</h2>
+      <input
+        type="tel"
+        class="pin-input"
+        id="pinInput"
+        maxlength="6"
+        placeholder="------"
+        autocomplete="off"
+        inputmode="numeric"
+      />
+      <p class="pin-error" id="pinError">Falscher PIN. Bitte nochmal versuchen.</p>
+    </div>
+
+    <!-- Upload Form -->
+    <form class="upload-form" id="uploadForm">
+      <!-- Drop zone -->
+      <div class="drop-zone" id="dropZone">
+        <div class="drop-zone-icon">+</div>
+        <div class="drop-zone-text">
+          <strong>Fotos auswaehlen</strong> oder hierher ziehen
+        </div>
+        <input type="file" id="fileInput" accept="image/*" multiple />
+      </div>
+
+      <!-- Image previews -->
+      <div class="previews" id="previews"></div>
+
+      <!-- Caption -->
+      <div class="field">
+        <label for="caption">Bildunterschrift</label>
+        <input type="text" id="caption" placeholder="z.B. Urlaub an der Ostsee" />
+        <span class="hint">Wird auf dem Bilderrahmen angezeigt</span>
+      </div>
+
+      <!-- Description -->
+      <div class="field">
+        <label for="description">Beschreibung (optional)</label>
+        <textarea id="description" rows="2" placeholder="z.B. Die Kinder am Strand"></textarea>
+      </div>
+
+      <!-- Name -->
+      <div class="field">
+        <label for="uploaderName">Dein Name</label>
+        <input type="text" id="uploaderName" placeholder="z.B. Maria" />
+        <span class="hint">Wird auf dem Bilderrahmen unter dem Foto angezeigt</span>
+      </div>
+
+      <!-- Progress bar -->
+      <div class="progress-bar" id="progressBar">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+
+      <!-- Status message -->
+      <div class="status" id="status"></div>
+
+      <!-- Submit -->
+      <button type="submit" class="submit-btn" id="submitBtn" disabled>
+        Hochladen
+      </button>
+    </form>
+
+    <div class="footer">
+      FamilyFrame &mdash; Digitaler Bilderrahmen fuer die Familie
+    </div>
+  </div>
+
+  <script>
+    // --- Configuration ---
+    // Set these at deployment time or via a config.js include
+    const API_BASE = ''; // e.g. https://eu-de.functions.appdomain.cloud/api/v1/web/ns/familyframe
+    const UPLOAD_ENDPOINT = API_BASE + '/upload_api';
+    const EXPECTED_PIN_HASH = ''; // SHA-256 hash of the PIN (for client-side pre-check)
+
+    // --- State ---
+    let selectedFiles = [];
+    let familyPin = '';
+
+    // --- Elements ---
+    const pinScreen = document.getElementById('pinScreen');
+    const pinInput = document.getElementById('pinInput');
+    const pinError = document.getElementById('pinError');
+    const uploadForm = document.getElementById('uploadForm');
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+    const previews = document.getElementById('previews');
+    const captionInput = document.getElementById('caption');
+    const descriptionInput = document.getElementById('description');
+    const nameInput = document.getElementById('uploaderName');
+    const submitBtn = document.getElementById('submitBtn');
+    const progressBar = document.getElementById('progressBar');
+    const progressFill = document.getElementById('progressFill');
+    const status = document.getElementById('status');
+
+    // --- PIN ---
+    // Restore saved PIN from localStorage
+    const savedPin = localStorage.getItem('familyframe_pin');
+    if (savedPin) {
+      familyPin = savedPin;
+      showUploadForm();
+    }
+
+    pinInput.addEventListener('input', function () {
+      const pin = this.value.trim();
+      if (pin.length >= 4) {
+        familyPin = pin;
+        localStorage.setItem('familyframe_pin', pin);
+        pinError.style.display = 'none';
+        showUploadForm();
+      }
+    });
+
+    function showUploadForm() {
+      pinScreen.style.display = 'none';
+      uploadForm.classList.add('active');
+      // Restore saved name
+      const savedName = localStorage.getItem('familyframe_name');
+      if (savedName) nameInput.value = savedName;
+    }
+
+    function showPinError() {
+      pinScreen.style.display = 'flex';
+      uploadForm.classList.remove('active');
+      pinError.style.display = 'block';
+      pinInput.value = '';
+      pinInput.focus();
+      familyPin = '';
+      localStorage.removeItem('familyframe_pin');
+    }
+
+    // --- Name persistence ---
+    nameInput.addEventListener('change', function () {
+      localStorage.setItem('familyframe_name', this.value.trim());
+    });
+
+    // --- File selection ---
+    fileInput.addEventListener('change', function () {
+      addFiles(Array.from(this.files));
+      this.value = ''; // Reset so same file can be re-selected
+    });
+
+    // Drag & drop
+    dropZone.addEventListener('dragover', function (e) {
+      e.preventDefault();
+      this.classList.add('dragover');
+    });
+
+    dropZone.addEventListener('dragleave', function () {
+      this.classList.remove('dragover');
+    });
+
+    dropZone.addEventListener('drop', function (e) {
+      e.preventDefault();
+      this.classList.remove('dragover');
+      const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
+      addFiles(files);
+    });
+
+    function addFiles(files) {
+      for (const file of files) {
+        if (!file.type.startsWith('image/')) continue;
+        if (selectedFiles.some(f => f.name === file.name && f.size === file.size)) continue;
+        selectedFiles.push(file);
+      }
+      renderPreviews();
+      updateSubmitButton();
+    }
+
+    function removeFile(index) {
+      selectedFiles.splice(index, 1);
+      renderPreviews();
+      updateSubmitButton();
+    }
+
+    function renderPreviews() {
+      previews.innerHTML = '';
+      selectedFiles.forEach((file, i) => {
+        const div = document.createElement('div');
+        div.className = 'preview-item';
+
+        const img = document.createElement('img');
+        img.src = URL.createObjectURL(file);
+        img.onload = () => URL.revokeObjectURL(img.src);
+
+        const btn = document.createElement('button');
+        btn.className = 'preview-remove';
+        btn.textContent = '\u00d7';
+        btn.onclick = (e) => { e.preventDefault(); removeFile(i); };
+
+        div.appendChild(img);
+        div.appendChild(btn);
+        previews.appendChild(div);
+      });
+    }
+
+    function updateSubmitButton() {
+      submitBtn.disabled = selectedFiles.length === 0;
+      submitBtn.textContent = selectedFiles.length > 0
+        ? `${selectedFiles.length} Foto${selectedFiles.length > 1 ? 's' : ''} hochladen`
+        : 'Hochladen';
+    }
+
+    // --- Upload ---
+    uploadForm.addEventListener('submit', async function (e) {
+      e.preventDefault();
+      if (selectedFiles.length === 0) return;
+
+      submitBtn.disabled = true;
+      progressBar.classList.add('active');
+      progressFill.style.width = '0%';
+      status.className = 'status';
+      status.style.display = 'none';
+
+      try {
+        // Convert files to base64
+        const photos = [];
+        for (let i = 0; i < selectedFiles.length; i++) {
+          const file = selectedFiles[i];
+          const data = await fileToBase64(file);
+          photos.push({
+            filename: file.name,
+            content_type: file.type,
+            data: data,
+          });
+          progressFill.style.width = `${((i + 1) / selectedFiles.length * 50)}%`;
+        }
+
+        // Send to backend
+        progressFill.style.width = '60%';
+
+        const resp = await fetch(UPLOAD_ENDPOINT, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            pin: familyPin,
+            photos: photos,
+            caption: captionInput.value.trim(),
+            description: descriptionInput.value.trim(),
+            name: nameInput.value.trim(),
+          }),
+        });
+
+        progressFill.style.width = '90%';
+
+        if (resp.status === 403) {
+          showPinError();
+          return;
+        }
+
+        const result = await resp.json();
+        progressFill.style.width = '100%';
+
+        if (resp.ok) {
+          status.className = 'status success';
+          status.textContent = result.message || 'Fotos hochgeladen!';
+          status.style.display = 'block';
+
+          // Reset form
+          selectedFiles = [];
+          renderPreviews();
+          captionInput.value = '';
+          descriptionInput.value = '';
+          updateSubmitButton();
+        } else {
+          throw new Error(result.error || 'Upload fehlgeschlagen');
+        }
+      } catch (err) {
+        status.className = 'status error';
+        status.textContent = err.message || 'Fehler beim Hochladen';
+        status.style.display = 'block';
+      } finally {
+        submitBtn.disabled = selectedFiles.length === 0;
+        setTimeout(() => {
+          progressBar.classList.remove('active');
+        }, 1000);
+      }
+    });
+
+    function fileToBase64(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          // Remove the data:image/...;base64, prefix
+          const result = reader.result;
+          const base64 = result.split(',')[1];
+          resolve(base64);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+  </script>
+</body>
+</html>

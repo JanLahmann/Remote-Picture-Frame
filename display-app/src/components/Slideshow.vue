@@ -56,11 +56,13 @@ watch(
 
 const transitionDuration = computed(() => `${props.settings.transition_duration}s`)
 const isKenBurns = computed(() => props.settings.transition === 'kenburns')
+const isSlide = computed(() => props.settings.transition === 'slide')
 const slideshowDuration = computed(() => `${props.settings.slideshow_interval}s`)
+const transitionClass = computed(() => `transition-${props.settings.transition}`)
 </script>
 
 <template>
-  <div class="slideshow">
+  <div class="slideshow" :class="transitionClass">
     <!-- Image Slot A -->
     <div
       class="slide"
@@ -112,7 +114,8 @@ const slideshowDuration = computed(() => `${props.settings.slideshow_interval}s`
   position: absolute;
   inset: 0;
   opacity: 0;
-  transition: opacity v-bind(transitionDuration) ease-in-out;
+  transition: opacity v-bind(transitionDuration) ease-in-out,
+              transform v-bind(transitionDuration) ease-in-out;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -120,6 +123,19 @@ const slideshowDuration = computed(() => `${props.settings.slideshow_interval}s`
 
 .slide.active {
   opacity: 1;
+}
+
+/* Slide transition: new image slides in from the right */
+.slideshow.transition-slide .slide {
+  transform: translateX(100%);
+}
+
+.slideshow.transition-slide .slide.active {
+  transform: translateX(0);
+}
+
+.slideshow.transition-slide .slide.previous {
+  transform: translateX(-100%);
 }
 
 .slide img {

@@ -17,6 +17,7 @@ from shared import config
 from shared.onedrive import get_file_metadata, get_file_content, get_file_thumbnail_url
 from shared.metadata import create_photo_metadata, find_by_onedrive_id, ensure_database
 from shared.exif_utils import extract_exif
+from shared.geocoding import reverse_geocode
 
 # Image file extensions we process
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".heic", ".heif", ".webp", ".bmp", ".tiff"}
@@ -89,6 +90,13 @@ def _process_item(item_id: str) -> dict | None:
     content = get_file_content(item_id)
     exif_data = extract_exif(content)
 
+    # Reverse geocode GPS coordinates to place name
+    location = exif_data.get("location")
+    if location and location.get("lat") and location.get("lon"):
+        place_name = reverse_geocode(location["lat"], location["lon"])
+        if place_name:
+            location["name"] = place_name
+
     # Get thumbnail URL from OneDrive (Graph API generates thumbnails)
     thumbnail_url = get_file_thumbnail_url(item_id) or ""
 
@@ -108,7 +116,7 @@ def _process_item(item_id: str) -> dict | None:
         filename=filename,
         caption=caption,
         date_taken=exif_data.get("date_taken"),
-        location=exif_data.get("location"),
+        location=location,
         uploaded_by=uploaded_by,
         upload_channel="onedrive",
         thumbnail_url=thumbnail_url,
