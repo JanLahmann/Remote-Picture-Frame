@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
   <meta name="theme-color" content="#1a1a2e" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
   <title>FamilyFrame - Foto hochladen</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -678,6 +681,75 @@
         reader.readAsDataURL(file);
       });
     }
+
+    // --- Service Worker Registration ---
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js')
+        .then((reg) => {
+          console.log('Service Worker registered, scope:', reg.scope);
+        })
+        .catch((err) => {
+          console.warn('Service Worker registration failed:', err);
+        });
+    }
+
+    // --- Handle shared files from Share Target API ---
+    async function pickUpSharedFiles() {
+      const params = new URLSearchParams(window.location.search);
+      if (!params.has('shared')) return;
+
+      // Clean the URL so a refresh doesn't re-trigger
+      const cleanUrl = new URL(window.location);
+      cleanUrl.searchParams.delete('shared');
+      history.replaceState(null, '', cleanUrl.toString());
+
+      try {
+        const shareCache = await caches.open('familyframe-share-temp');
+
+        // Read metadata
+        const metaResp = await shareCache.match(new Request('/_share_meta'));
+        if (!metaResp) return;
+
+        const meta = await metaResp.json();
+        const fileCount = meta.fileCount || 0;
+
+        // Pre-fill caption/description from share metadata
+        if (meta.caption && !captionInput.value) {
+          captionInput.value = meta.caption;
+        }
+        if (meta.description && !descriptionInput.value) {
+          descriptionInput.value = meta.description;
+        }
+
+        // Retrieve each shared file
+        const sharedFiles = [];
+        for (let i = 0; i < fileCount; i++) {
+          const fileResp = await shareCache.match(new Request(`/_share_file_${i}`));
+          if (!fileResp) continue;
+
+          const blob = await fileResp.blob();
+          const filename = fileResp.headers.get('X-Filename') || `shared_${i}.jpg`;
+          const contentType = fileResp.headers.get('Content-Type') || 'image/jpeg';
+
+          // Convert Blob to File object
+          const file = new File([blob], filename, { type: contentType });
+          sharedFiles.push(file);
+        }
+
+        // Clean up the temporary cache
+        await caches.delete('familyframe-share-temp');
+
+        // Add shared files to the upload form
+        if (sharedFiles.length > 0) {
+          addFiles(sharedFiles);
+        }
+      } catch (err) {
+        console.warn('Error picking up shared files:', err);
+      }
+    }
+
+    // Pick up shared files after the form is ready
+    pickUpSharedFiles();
   </script>
 </body>
 </html>

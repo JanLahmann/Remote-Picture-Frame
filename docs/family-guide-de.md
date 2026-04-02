@@ -44,6 +44,26 @@ Kein App, kein Account noetig — einfach einen Link oeffnen!
 
 > **Tipp**: Speichere den Link als Lesezeichen auf deinem Handy — dann geht es beim naechsten Mal noch schneller. Dein Name ist im Link gespeichert, du musst ihn nicht jedes Mal eingeben.
 
+### Als App auf dem Handy installieren (optional)
+
+Du kannst die Upload-Seite wie eine richtige App auf deinem Handy installieren. Dann findest du sie direkt auf dem Startbildschirm.
+
+**Android:**
+1. Oeffne deinen persoenlichen Link in **Chrome**
+2. Tippe auf das **Drei-Punkte-Menue** (oben rechts)
+3. Waehle **"Zum Startbildschirm hinzufuegen"** oder **"App installieren"**
+4. Fertig! Du kannst jetzt Fotos direkt aus deiner Galerie ueber das **Teilen-Menue** an "FamilyFrame" senden
+
+**iPhone / iPad:**
+1. Oeffne deinen persoenlichen Link in **Safari** (wichtig: nicht Chrome!)
+2. Tippe auf das **Teilen-Symbol** (Quadrat mit Pfeil nach oben)
+3. Scrolle nach unten und tippe auf **"Zum Home-Bildschirm"**
+4. Tippe auf **"Hinzufuegen"**
+
+> **Hinweis Android**: Nach der Installation kannst du Fotos direkt aus der Galerie oder Kamera ueber das Teilen-Menue an FamilyFrame senden — wie bei WhatsApp!
+>
+> **Hinweis iPhone**: Auf dem iPhone ist das Teilen aus der Galerie leider noch nicht moeglich. Oeffne stattdessen die FamilyFrame-App vom Startbildschirm und waehle dort deine Fotos aus.
+
 ---
 
 ## Weg 3: OneDrive-App
