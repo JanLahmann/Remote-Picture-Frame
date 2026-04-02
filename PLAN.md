@@ -6,7 +6,131 @@ A digital picture frame for grandma. Family members (~20 people) upload photos f
 
 ---
 
-## 1. Architecture Overview
+## Implementation Paths
+
+Three approaches, from zero-code to fully custom. They can be adopted incrementally — start with Path A, evolve to B or C if needed.
+
+### Path A: Pure Google Photos (no code, deploy today)
+
+**Setup:** Chromecast with Google TV (~€35) plugged into grandma's Samsung TV. Google Photos Ambient Mode as screensaver, showing a shared album.
+
+**How it works:**
+1. Create a Google account (e.g. `familyframe@gmail.com`)
+2. Create a shared Google Photos album, share the link with all family members
+3. Family adds photos via Google Photos app or the shared album link (no Google account needed to add)
+4. On Chromecast: Settings → Display → Ambient Mode → Google Photos → select the shared album
+5. Done. Grandma sees photos automatically.
+
+**What you get for free:**
+- Slideshow on TV (ambient mode)
+- Family uploads via Google Photos app or shared link
+- Face recognition (Google's built-in, excellent)
+- Person albums (auto-grouped by Google)
+- "Memories" / "On this day" (in Google Photos app)
+- Captions (photo descriptions in Google Photos)
+- Album selection & person filter via Google TV remote
+- Multiple event albums (family creates them in Google Photos)
+- Zero maintenance
+
+**What you don't get:**
+- Smart rotation (weighted by newness, favorites, birthdays) — random only
+- WhatsApp as upload channel
+- Custom overlay with badges ("Neu", "Vor 3 Jahren", birthday highlights)
+- Night mode dimming (screen off only, no gradual dim)
+- Remote admin configuration
+- Upload via simple web page with PIN (family needs Google Photos app or link)
+
+**Cost:** ~€35 one-time (Chromecast) + €0/month (15 GB free, €2/month for 100 GB if needed)
+
+**Effort:** 15 minutes setup. Zero code. Zero maintenance.
+
+### Path B: Lightweight custom PWA on Google Photos (minimal code)
+
+**Setup:** Same Chromecast hardware. Our custom PWA runs in a kiosk browser, but uses Google Photos as the storage backend instead of OneDrive.
+
+**What we build (thin layer):**
+- Display PWA with smart rotation algorithm, custom overlays, birthday highlights
+- Backend: one lightweight API that reads from Google Photos API and serves photo list + metadata
+- Cloudant: stores only our custom metadata (favorites, birthday config, rotation state)
+- Keyboard/remote navigation (TV remote via HDMI-CEC)
+
+**What we skip (Google handles it):**
+- Photo storage & upload infrastructure (Google Photos shared albums)
+- Face recognition (Google's built-in)
+- EXIF extraction & thumbnails (Google does this automatically)
+- OneDrive integration, Graph API webhooks, subscription renewal
+- Upload page (family uses Google Photos app/link)
+- WhatsApp webhook (family uses Google Photos instead)
+
+**What you get beyond Path A:**
+- Smart weighted rotation (new photos 3x, favorites 2.5x, "on this day" 4x, birthday 3x)
+- Custom overlay with badges and captions
+- Night mode CSS dimming
+- TV remote navigation menu
+- Remote-configurable settings
+- Birthday highlights
+
+**Limitations:**
+- No WhatsApp upload channel (could be added later)
+- No person-based API queries (Google removed this from their API — workaround: family creates per-person albums, or we accept this limitation)
+- Google Photos API rate limit: 10,000 requests/day (more than sufficient)
+
+**Cost:** ~€35 one-time + €0/month
+
+**Effort:** ~1-2 weeks development. Significantly less code than Path C.
+
+### Path C: Full custom system (current approach)
+
+**Setup:** Any display device (tablet, RPi, Chromecast + kiosk browser). Our PWA with full backend on IBM Cloud, OneDrive as storage.
+
+**What we build (everything):**
+- Display PWA with all features (smart rotation, overlays, person filter, touch + remote controls)
+- Full backend: 6 IBM Cloud Functions (process_new_photo, display_sync_api, upload_api, whatsapp_webhook, admin_api, refresh_subscription)
+- OneDrive integration with Graph API webhooks
+- Azure Face API for face recognition
+- WhatsApp Cloud API for photo uploads via chat
+- Web upload page (PWA with Share Target API)
+- Admin interface (photo management, settings, face training)
+- Cloudant for all metadata
+
+**What you get beyond Path B:**
+- WhatsApp as upload channel (easiest for non-tech family members)
+- Face recognition with person-based filtering via API
+- Web upload page with PIN (works for guests, no app needed)
+- Full admin interface with photo moderation
+- Multiple upload channels (WhatsApp, web, OneDrive, email)
+- Complete control over every aspect
+
+**Cost:** ~€35-270 one-time (display device) + €0/month (all free tiers)
+
+**Effort:** ~6-8 weeks development. Full maintenance responsibility.
+
+### Comparison
+
+| | Path A | Path B | Path C |
+|---|---|---|---|
+| **Setup time** | 15 minutes | 1-2 weeks dev | 6-8 weeks dev |
+| **Maintenance** | Zero | Low | Medium |
+| **Slideshow** | Random | Smart weighted | Smart weighted |
+| **Upload method** | Google Photos app/link | Google Photos app/link | WhatsApp, web, OneDrive, email |
+| **Face recognition** | Google (excellent) | Google (no API query) | Azure Face API (API queryable) |
+| **Custom overlay** | No | Yes | Yes |
+| **Birthday highlights** | No | Yes | Yes |
+| **WhatsApp upload** | No | No (add later) | Yes |
+| **Admin interface** | Google Photos | Lightweight | Full |
+| **TV remote nav** | Google TV built-in | Custom menu | Custom menu |
+| **Tablet support** | No (Chromecast only) | Yes (PWA) | Yes (PWA) |
+| **Offline resilience** | Chromecast caches | Service Worker | Service Worker + optional rclone |
+
+### Recommended strategy
+
+**Start with Path A today.** Grandma sees family photos on her TV tonight. Share the album link in the family WhatsApp group — everyone can start uploading immediately.
+
+**Evaluate after 2-4 weeks:** Does the family miss smart rotation, WhatsApp uploads, birthday highlights? If the answer is "this is good enough" — stop here. If specific features are missed, evolve to Path B (add our PWA on top of Google Photos). Only go to Path C if the family actively wants WhatsApp uploads or full admin control.
+
+---
+
+## 1. Architecture Overview (Path C — Full Custom)
 
 ```
 Upload Channels              Processing                Storage            Display
