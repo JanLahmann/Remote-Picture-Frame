@@ -53,6 +53,8 @@ def main(params: dict) -> dict:
         return _handle_sync(params)
     elif action == "photo":
         return _handle_photo(params)
+    elif action == "uploaders":
+        return _handle_uploaders(params)
     elif action == "settings":
         return _handle_settings(params)
     else:
@@ -64,11 +66,16 @@ def main(params: dict) -> dict:
 
 
 def _handle_sync(params: dict) -> dict:
-    """Return list of photos, optionally since a given timestamp."""
+    """Return list of photos, optionally filtered by timestamp or uploader."""
     since = params.get("since")
     limit = min(int(params.get("limit", "200")), 500)
+    uploader = params.get("uploader", "")
 
     photos = list_photos(since=since, visible_only=True, limit=limit)
+
+    # Filter by uploader if requested
+    if uploader:
+        photos = [p for p in photos if p.get("uploaded_by", "") == uploader]
 
     # Enrich with download URLs
     items = []
@@ -151,6 +158,18 @@ def _handle_photo(params: dict) -> dict:
             "thumbnail_url": photo.get("thumbnail_url", ""),
             "tags": photo.get("tags", []),
         },
+    }
+
+
+def _handle_uploaders(params: dict) -> dict:
+    """Return a list of unique uploader names."""
+    photos = list_photos(visible_only=True, limit=9999)
+    uploaders = sorted(set(p.get("uploaded_by", "") for p in photos if p.get("uploaded_by")))
+
+    return {
+        "statusCode": 200,
+        "headers": CORS_HEADERS,
+        "body": {"uploaders": uploaders},
     }
 
 

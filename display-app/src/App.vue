@@ -3,9 +3,11 @@ import { ref, watch, computed } from 'vue'
 import Slideshow from '@/components/Slideshow.vue'
 import PhotoOverlay from '@/components/PhotoOverlay.vue'
 import TouchControls from '@/components/TouchControls.vue'
+import PersonFilter from '@/components/PersonFilter.vue'
 import { useSync } from '@/composables/useSync'
 import { useSlideshow } from '@/composables/useSlideshow'
 import { useSettings } from '@/composables/useSettings'
+import type { Photo } from '@/types'
 
 // Settings (loaded from backend)
 const { settings, nightBrightness } = useSettings()
@@ -13,18 +15,34 @@ const { settings, nightBrightness } = useSettings()
 // Photo sync
 const { photos } = useSync(settings.value.sync_interval)
 
-// Slideshow control
+// Person filter: filter displayed photos by uploader
+const activeFilter = ref('')
+const filteredPhotos = computed(() => {
+  if (!activeFilter.value) return photos.value
+  return photos.value.filter((p) => p.uploaded_by === activeFilter.value)
+})
+
+// Count of new photos (uploaded in last 24h)
+const newPhotoCount = computed(() => {
+  const oneDayAgo = Date.now() - 24 * 60 * 60 * 1000
+  return photos.value.filter(
+    (p) => new Date(p.uploaded_at).getTime() > oneDayAgo,
+  ).length
+})
+
+// Slideshow control (uses filtered photos)
 const { currentPhoto, currentIndex, totalPhotos, isPaused, orderedPhotos, next, previous, togglePause } =
-  useSlideshow(photos, settings)
+  useSlideshow(filteredPhotos, settings)
 
 // Track previous photo for crossfade
-const previousPhoto = ref(currentPhoto.value)
+const previousPhoto = ref<Photo | null>(currentPhoto.value)
 watch(currentPhoto, (_, old) => {
   previousPhoto.value = old
 })
 
 // Overlay control
 const overlayRef = ref<InstanceType<typeof PhotoOverlay> | null>(null)
+const personFilterRef = ref<InstanceType<typeof PersonFilter> | null>(null)
 
 function showOverlay() {
   overlayRef.value?.show()
@@ -32,6 +50,20 @@ function showOverlay() {
 
 function hideOverlay() {
   overlayRef.value?.hide()
+}
+
+function onTogglePause() {
+  togglePause()
+  // Show person filter when pausing (double-tap)
+  if (isPaused.value) {
+    personFilterRef.value?.show()
+  } else {
+    personFilterRef.value?.hide()
+  }
+}
+
+function onPersonFilter(uploader: string) {
+  activeFilter.value = uploader
 }
 
 // Enter fullscreen on first interaction
@@ -60,12 +92,19 @@ const brightnessFilter = computed(() => `brightness(${nightBrightness.value})`)
       :is-paused="isPaused"
       :current-index="currentIndex"
       :total-photos="totalPhotos"
+      :new-photo-count="newPhotoCount"
+      :active-filter="activeFilter"
+    />
+
+    <PersonFilter
+      ref="personFilterRef"
+      @filter="onPersonFilter"
     />
 
     <TouchControls
       @next="next"
       @previous="previous"
-      @toggle-pause="togglePause"
+      @toggle-pause="onTogglePause"
       @show-overlay="showOverlay"
       @hide-overlay="hideOverlay"
     />

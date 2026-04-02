@@ -8,6 +8,8 @@ const props = defineProps<{
   isPaused: boolean
   currentIndex: number
   totalPhotos: number
+  newPhotoCount: number
+  activeFilter: string
 }>()
 
 const visible = ref(false)
@@ -54,6 +56,13 @@ const formattedDate = computed(() => {
   }
 })
 
+const isNewPhoto = computed(() => {
+  if (!props.photo?.uploaded_at) return false
+  const uploadedAt = new Date(props.photo.uploaded_at).getTime()
+  const oneDayAgo = Date.now() - 24 * 60 * 60 * 1000
+  return uploadedAt > oneDayAgo
+})
+
 const locationName = computed(() => {
   const loc = props.photo?.location
   if (!loc) return ''
@@ -70,6 +79,9 @@ defineExpose({ show, hide })
   <Transition name="overlay">
     <div v-if="visible && photo" class="overlay">
       <div class="overlay-content">
+        <!-- New photo badge -->
+        <span v-if="isNewPhoto" class="new-badge">Neu</span>
+
         <!-- Caption -->
         <h2 v-if="photo.caption" class="caption">{{ photo.caption }}</h2>
 
@@ -91,7 +103,9 @@ defineExpose({ show, hide })
 
         <!-- Progress / status -->
         <div class="status">
+          <span v-if="activeFilter" class="filter-indicator">{{ activeFilter }}</span>
           <span v-if="isPaused" class="paused-indicator">⏸ Pausiert</span>
+          <span v-if="newPhotoCount > 0 && !isNewPhoto" class="new-count">{{ newPhotoCount }} neue Fotos</span>
           <span class="counter">{{ currentIndex + 1 }} / {{ totalPhotos }}</span>
         </div>
       </div>
@@ -151,6 +165,31 @@ defineExpose({ show, hide })
   gap: 1rem;
   font-size: 0.85rem;
   opacity: 0.6;
+}
+
+.new-badge {
+  display: inline-block;
+  background: rgba(78, 204, 163, 0.8);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.2rem 0.6rem;
+  border-radius: 0.8rem;
+  margin-bottom: 0.4rem;
+}
+
+.filter-indicator {
+  background: rgba(78, 204, 163, 0.4);
+  padding: 0.15rem 0.5rem;
+  border-radius: 0.6rem;
+  font-size: 0.8rem;
+}
+
+.new-count {
+  color: #4ecca3;
+  font-size: 0.8rem;
 }
 
 .paused-indicator {

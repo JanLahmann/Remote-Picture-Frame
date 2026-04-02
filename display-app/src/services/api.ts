@@ -12,9 +12,10 @@ function headers(): HeadersInit {
   return h
 }
 
-export async function syncPhotos(since?: string): Promise<SyncResponse> {
+export async function syncPhotos(since?: string, uploader?: string): Promise<SyncResponse> {
   const params = new URLSearchParams({ action: 'sync' })
   if (since) params.set('since', since)
+  if (uploader) params.set('uploader', uploader)
 
   const resp = await fetch(`${API_BASE}/display_sync_api?${params}`, {
     headers: headers(),
@@ -25,6 +26,19 @@ export async function syncPhotos(since?: string): Promise<SyncResponse> {
   }
 
   return resp.json()
+}
+
+export async function fetchUploaders(): Promise<string[]> {
+  const resp = await fetch(`${API_BASE}/display_sync_api?action=uploaders`, {
+    headers: headers(),
+  })
+
+  if (!resp.ok) {
+    throw new Error(`Uploaders fetch failed: ${resp.status}`)
+  }
+
+  const data = await resp.json()
+  return data.uploaders || []
 }
 
 export async function fetchSettings(): Promise<DisplaySettings> {
