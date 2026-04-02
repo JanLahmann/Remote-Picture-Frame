@@ -194,6 +194,7 @@ def _handle_settings(params: dict) -> dict:
             "brightness": 0.1,
         },
         "sync_interval": 5,
+        "family_members": [],
     }
 
     # Try to load settings from OneDrive

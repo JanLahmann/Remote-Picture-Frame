@@ -406,10 +406,9 @@
     const UPLOAD_ENDPOINT = API_BASE + '/upload_api';
     const EXPECTED_PIN_HASH = ''; // SHA-256 hash of the PIN (for client-side pre-check)
 
-    // Family member names — configure this list for your family
-    const FAMILY_MEMBERS = [
-      // 'Anna', 'Thomas', 'Lisa', 'Maria', 'Jan', ...
-    ];
+    // Family member names — loaded from backend settings, with local fallback
+    let FAMILY_MEMBERS = [];
+    const SETTINGS_ENDPOINT = API_BASE + '/display_sync_api?action=settings';
 
     // --- State ---
     let selectedFiles = [];
@@ -431,29 +430,49 @@
     const greetingText = document.getElementById('greetingText');
     const submitBtn = document.getElementById('submitBtn');
 
-    // --- Populate family member dropdown ---
-    FAMILY_MEMBERS.sort().forEach(name => {
-      const opt = document.createElement('option');
-      opt.value = name;
-      opt.textContent = name;
-      nameInput.appendChild(opt);
-    });
-
-    // --- URL parameter: ?user=Anna auto-selects and hides the dropdown ---
-    const urlUser = new URLSearchParams(window.location.search).get('user');
+    // --- Load family members from backend settings ---
     let fixedUser = '';
-    if (urlUser) {
-      // Find matching name (case-insensitive)
-      const match = FAMILY_MEMBERS.find(n => n.toLowerCase() === urlUser.toLowerCase());
-      if (match) {
-        fixedUser = match;
-        nameInput.value = match;
-        nameField.style.display = 'none';
-        userGreeting.style.display = 'block';
-        greetingText.textContent = `Hallo ${match}!`;
-        localStorage.setItem('familyframe_name', match);
+
+    async function loadFamilyMembers() {
+      try {
+        const resp = await fetch(SETTINGS_ENDPOINT);
+        if (resp.ok) {
+          const data = await resp.json();
+          FAMILY_MEMBERS = (data.family_members || []).sort();
+        }
+      } catch (e) {
+        console.warn('Could not load family members from settings:', e);
+      }
+      populateDropdown();
+    }
+
+    function populateDropdown() {
+      // Clear existing options (keep the placeholder)
+      while (nameInput.options.length > 1) nameInput.remove(1);
+
+      FAMILY_MEMBERS.forEach(name => {
+        const opt = document.createElement('option');
+        opt.value = name;
+        opt.textContent = name;
+        nameInput.appendChild(opt);
+      });
+
+      // Check URL parameter: ?user=Anna
+      const urlUser = new URLSearchParams(window.location.search).get('user');
+      if (urlUser) {
+        const match = FAMILY_MEMBERS.find(n => n.toLowerCase() === urlUser.toLowerCase());
+        if (match) {
+          fixedUser = match;
+          nameInput.value = match;
+          nameField.style.display = 'none';
+          userGreeting.style.display = 'block';
+          greetingText.textContent = `Hallo ${match}!`;
+          localStorage.setItem('familyframe_name', match);
+        }
       }
     }
+
+    loadFamilyMembers();
     const progressBar = document.getElementById('progressBar');
     const progressFill = document.getElementById('progressFill');
     const status = document.getElementById('status');

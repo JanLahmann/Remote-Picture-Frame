@@ -21,7 +21,26 @@ const settings = ref({
     brightness: 0.1,
   },
   sync_interval: 5,
+  family_members: [] as string[],
 })
+
+const newMemberName = ref('')
+
+function addMember() {
+  const name = newMemberName.value.trim()
+  if (!name) return
+  if (settings.value.family_members.includes(name)) {
+    newMemberName.value = ''
+    return
+  }
+  settings.value.family_members.push(name)
+  settings.value.family_members.sort()
+  newMemberName.value = ''
+}
+
+function removeMember(index: number) {
+  settings.value.family_members.splice(index, 1)
+}
 
 async function loadSettings() {
   loading.value = true
@@ -153,6 +172,32 @@ onMounted(loadSettings)
         </template>
       </fieldset>
 
+      <!-- Family Members -->
+      <fieldset>
+        <legend>Familienmitglieder</legend>
+        <p class="field-hint">Diese Namen erscheinen im Dropdown der Upload-Seite und im Personenfilter auf dem Bilderrahmen.</p>
+
+        <div class="member-list">
+          <div v-for="(name, i) in settings.family_members" :key="name" class="member-item">
+            <span>{{ name }}</span>
+            <button type="button" class="remove-btn" @click="removeMember(i)" title="Entfernen">&times;</button>
+          </div>
+          <div v-if="settings.family_members.length === 0" class="empty-hint">
+            Noch keine Mitglieder hinzugefuegt.
+          </div>
+        </div>
+
+        <div class="add-member">
+          <input
+            type="text"
+            v-model="newMemberName"
+            placeholder="Name eingeben..."
+            @keydown.enter.prevent="addMember"
+          />
+          <button type="button" class="add-btn" @click="addMember">Hinzufuegen</button>
+        </div>
+      </fieldset>
+
       <!-- Sync -->
       <fieldset>
         <legend>Synchronisation</legend>
@@ -216,6 +261,45 @@ select:focus, input[type="time"]:focus { outline: none; border-color: #4ecca3; }
 }
 .message.success { background: rgba(78,204,163,0.15); color: #4ecca3; }
 .message.error { background: rgba(231,76,60,0.15); color: #e74c3c; }
+
+.field-hint {
+  font-size: 0.8rem; color: #888; margin: 0 0 0.3rem; line-height: 1.4;
+}
+
+.member-list {
+  display: flex; flex-wrap: wrap; gap: 0.4rem;
+}
+
+.member-item {
+  display: flex; align-items: center; gap: 0.3rem;
+  background: #0f0f1a; border: 1px solid #333; border-radius: 2rem;
+  padding: 0.35rem 0.5rem 0.35rem 0.75rem; font-size: 0.9rem;
+}
+
+.remove-btn {
+  background: none; border: none; color: #e74c3c; font-size: 1.1rem;
+  cursor: pointer; line-height: 1; padding: 0 0.2rem;
+}
+.remove-btn:hover { color: #ff6b6b; }
+
+.empty-hint { font-size: 0.85rem; color: #666; font-style: italic; }
+
+.add-member {
+  display: flex; gap: 0.5rem;
+}
+
+.add-member input {
+  flex: 1; padding: 0.5rem 0.75rem; background: #0f0f1a; border: 1px solid #333;
+  border-radius: 8px; color: #e0e0e0; font-size: 0.9rem;
+}
+.add-member input:focus { outline: none; border-color: #4ecca3; }
+
+.add-btn {
+  padding: 0.5rem 1rem; background: #4ecca3; color: #000; border: none;
+  border-radius: 8px; font-size: 0.85rem; font-weight: 600; cursor: pointer;
+  white-space: nowrap;
+}
+.add-btn:hover { background: #3db88f; }
 
 .save-btn {
   padding: 0.8rem; background: #4ecca3; color: #000; border: none;

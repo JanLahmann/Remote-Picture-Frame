@@ -244,6 +244,7 @@ def _handle_settings_get(params: dict) -> dict:
             "brightness": 0.1,
         },
         "sync_interval": 5,
+        "family_members": [],
     }
 
     try:
