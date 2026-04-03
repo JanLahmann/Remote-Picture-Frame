@@ -1,6 +1,6 @@
 # FamilyFrame - Raspberry Pi USB Gadget Setup
 
-The RPi emulates a USB drive that plugs into grandma's Samsung TV. The TV's
+The RPi emulates a USB drive that plugs into grandma's Panasonic TV. The TV's
 built-in media player shows photos as a slideshow. The RPi syncs photos from
 OneDrive in the background over WiFi.
 
@@ -21,7 +21,7 @@ port serves both power and data.
 ## How it works
 
 ```
-OneDrive ──WiFi──→ RPi Zero 2 W ──USB──→ Samsung TV
+OneDrive ──WiFi──→ RPi Zero 2 W ──USB──→ Panasonic TV
 (family uploads)   (syncs photos,         (built-in USB
                     sorts by person,       media player,
                     emulates USB drive)    grandma's remote)
@@ -50,12 +50,20 @@ OneDrive ──WiFi──→ RPi Zero 2 W ──USB──→ Samsung TV
    sudo ./setup.sh
    ```
 
-4. Configure rclone for OneDrive:
+4. Configure rclone for OneDrive (headless — no browser on the Pi):
    ```bash
+   # On your LAPTOP (not the Pi), run:
+   rclone authorize "onedrive"
+   # Sign in with Microsoft account, copy the token JSON
+
+   # On the Pi:
    rclone config
    # Create a remote named "onedrive", type "onedrive"
-   # Follow the OAuth flow (may need a browser on another machine)
+   # When asked "Use auto config?" answer: n
+   # Paste the token from your laptop
    ```
+   See [docs/setup-rclone-headless.md](../docs/setup-rclone-headless.md) for
+   the full step-by-step guide.
 
 5. Test the connection:
    ```bash
