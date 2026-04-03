@@ -690,6 +690,7 @@ Automatic identification of who is **in** each photo, so grandma can filter by p
 - Reactions (family members can "heart" photos from their phones)
 - Ambient light sensor integration (auto-brightness, where supported)
 - Push notifications to display via Web Push API (instant photo updates)
+- **Web upload page: folder selection and creation** — Upload page should let users select an existing OneDrive subfolder (e.g. "Urlaub Kroatien") as upload target, or create a new event folder (e.g. "Weihnachten 2027") directly from the upload form. Folder list fetched dynamically from OneDrive. New folders created in `/FamilyFrame/photos/` via backend API. These folders appear as-is on grandma's TV via the USB drive.
 
 - **Alternative backend: Google Photos instead of OneDrive**
   Replace OneDrive with Google Photos as the photo storage layer. This would significantly simplify the architecture by leveraging Google's built-in EXIF extraction, thumbnail generation, and face recognition.
