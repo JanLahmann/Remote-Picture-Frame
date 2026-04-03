@@ -1,5 +1,6 @@
 ibmcloudant==0.8.1
 requests>=2.31.0
 Pillow>=10.0.0
+piexif>=1.1.3
 msal>=1.28.0
 python-dateutil>=2.8.2

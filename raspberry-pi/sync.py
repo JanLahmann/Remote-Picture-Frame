@@ -29,6 +29,60 @@ try:
 except ImportError:
     HAS_ENHANCE = False
 
+
+def read_photo_metadata(file_path: Path) -> dict:
+    """Read FamilyFrame metadata from EXIF UserComment embedded by the upload API.
+
+    Returns dict with keys: caption, uploaded_by, description, location.
+    Returns empty values for photos uploaded directly to OneDrive (no metadata).
+    """
+    result = {"caption": "", "uploaded_by": "", "description": "", "location": ""}
+    try:
+        from PIL import Image
+        from PIL.ExifTags import TAGS
+    except ImportError:
+        return result
+
+    TAG_USER_COMMENT = 37510
+
+    try:
+        img = Image.open(file_path)
+        exif_data = img._getexif()
+        if not exif_data:
+            return result
+    except Exception:
+        return result
+
+    # Try UserComment (JSON blob from upload API)
+    user_comment = exif_data.get(TAG_USER_COMMENT)
+    if user_comment:
+        try:
+            import json as _json
+            if isinstance(user_comment, bytes) and len(user_comment) > 8:
+                json_str = user_comment[8:].decode("utf-8")
+                meta = _json.loads(json_str)
+                if meta.get("source") == "familyframe-web":
+                    result["caption"] = meta.get("caption", "")
+                    result["uploaded_by"] = meta.get("uploaded_by", "")
+                    result["description"] = meta.get("description", "")
+                    result["location"] = meta.get("location", "")
+                    return result
+        except Exception:
+            pass
+
+    # Fall back to standard EXIF fields
+    decoded = {}
+    for tag_id, value in exif_data.items():
+        tag_name = TAGS.get(tag_id, tag_id)
+        decoded[tag_name] = value
+
+    if decoded.get("ImageDescription"):
+        result["caption"] = str(decoded["ImageDescription"]).strip()
+    if decoded.get("Artist"):
+        result["uploaded_by"] = str(decoded["Artist"]).strip()
+
+    return result
+
 # --- Configuration ---
 FRAME_DIR = Path("/opt/familyframe")
 MOUNT_POINT = FRAME_DIR / "mnt"
@@ -273,6 +327,9 @@ def sync_photos(
             except (ValueError, IndexError):
                 pass
 
+            # Read caption/uploader metadata from EXIF (embedded by upload API)
+            photo_meta = read_photo_metadata(staging_file) if do_enhance else {}
+
             # Determine target path on USB image
             # Files in subdirectories keep their folder structure
             # Files in root go to "Alle Fotos/"
@@ -296,7 +353,10 @@ def sync_photos(
                 if do_enhance:
                     enhance_photo(
                         staging_file, usb_all,
+                        caption=photo_meta.get("caption", ""),
                         date_taken=info.get("mod_time", ""),
+                        location=photo_meta.get("location", ""),
+                        uploaded_by=photo_meta.get("uploaded_by", ""),
                         is_new=is_new_photo,
                     )
                 else:
@@ -306,7 +366,10 @@ def sync_photos(
             if do_enhance:
                 enhance_photo(
                     staging_file, usb_dest,
+                    caption=photo_meta.get("caption", ""),
                     date_taken=info.get("mod_time", ""),
+                    location=photo_meta.get("location", ""),
+                    uploaded_by=photo_meta.get("uploaded_by", ""),
                     is_new=is_new_photo,
                 )
             else:

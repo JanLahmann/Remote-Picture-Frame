@@ -20,7 +20,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
 from shared import config
 from shared.onedrive import upload_file
-from shared.exif_utils import extract_exif
+from shared.exif_utils import extract_exif, embed_metadata
 
 # Optional imports — only needed for Path C (full system)
 try:
@@ -169,6 +169,24 @@ def _process_upload(
         raise ValueError(f"Nicht unterstuetztes Format: {content_type}")
 
     image_bytes = base64.b64decode(data_b64)
+
+    # Embed caption/uploader metadata into EXIF so the RPi can read it
+    # during sync and pass it to enhance_photo() for overlay rendering
+    if content_type in ("image/jpeg", "image/jpg"):
+        location_name = ""
+        exif_pre = extract_exif(image_bytes)
+        if exif_pre.get("location") and HAS_GEOCODING:
+            loc = exif_pre["location"]
+            if loc.get("lat") and loc.get("lon"):
+                location_name = reverse_geocode(loc["lat"], loc["lon"]) or ""
+
+        image_bytes = embed_metadata(
+            image_bytes,
+            caption=caption,
+            uploaded_by=uploader_name,
+            description=description,
+            location_name=location_name,
+        )
 
     # Generate unique filename
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
