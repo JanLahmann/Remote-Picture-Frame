@@ -18,6 +18,9 @@ import subprocess
 import sys
 import time
 from pathlib import Path
+from typing import Optional
+
+from face_recognition import FaceRecognizer
 
 # --- Configuration ---
 FRAME_DIR = Path("/opt/familyframe")
@@ -55,6 +58,17 @@ def load_config() -> dict:
                 key, _, value = line.partition("=")
                 config[key.strip()] = value.strip()
     return config
+
+
+def create_face_recognizer(config: dict) -> Optional[FaceRecognizer]:
+    """Create a FaceRecognizer if Azure Face API is configured."""
+    key = config.get("AZURE_FACE_KEY", "")
+    endpoint = config.get("AZURE_FACE_ENDPOINT", "")
+    if key and endpoint:
+        log.info("Face recognition enabled (Azure Face API)")
+        return FaceRecognizer(endpoint, key)
+    log.info("Face recognition disabled (no Azure Face API key configured)")
+    return None
 
 
 def load_state() -> dict:
@@ -139,13 +153,68 @@ def rclone_download_file(config: dict, relative_path: str, dest: Path):
     return True
 
 
-def sync_photos(config: dict, state: dict) -> bool:
+def recognize_and_copy_to_person_folders(
+    recognizer: Optional[FaceRecognizer],
+    staging_file: Path,
+    filename: str,
+    state_entry: dict,
+):
+    """Run face recognition on a photo and copy it into person-named folders.
+
+    A photo with Anna and Thomas in it gets copied to both /Anna/ and /Thomas/.
+    Results are cached in state_entry["people"] to avoid re-processing.
+    """
+    if recognizer is None:
+        return
+
+    try:
+        image_bytes = staging_file.read_bytes()
+        people = recognizer.recognize(image_bytes)
+    except Exception as e:
+        log.warning(f"Face recognition failed for {filename}: {e}")
+        return
+
+    state_entry["people"] = people
+
+    if not people:
+        log.debug(f"No faces recognized in {filename}")
+        return
+
+    log.info(f"Recognized in {filename}: {', '.join(people)}")
+
+    for person_name in people:
+        # Sanitize folder name (remove problematic characters for FAT32)
+        safe_name = person_name.replace("/", "_").replace("\\", "_").strip()
+        person_dir = MOUNT_POINT / safe_name
+        person_dir.mkdir(parents=True, exist_ok=True)
+
+        person_file = person_dir / filename
+        if not person_file.exists():
+            shutil.copy2(str(staging_file), str(person_file))
+
+
+def remove_from_person_folders(filename: str, people: list[str]):
+    """Remove a photo from all person folders it was sorted into."""
+    for person_name in people:
+        safe_name = person_name.replace("/", "_").replace("\\", "_").strip()
+        person_file = MOUNT_POINT / safe_name / filename
+        if person_file.exists():
+            person_file.unlink()
+            log.info(f"Removed {filename} from {safe_name}/")
+
+
+def sync_photos(
+    config: dict,
+    state: dict,
+    recognizer: Optional[FaceRecognizer] = None,
+) -> bool:
     """
     Main sync logic:
     1. List remote files
     2. Download new/changed files to staging
-    3. Copy to USB image (into appropriate folders)
-    4. Remove deleted files from USB image
+    3. Run face recognition → sort into person folders
+    4. Copy to USB image (into appropriate folders)
+    5. Remove deleted files from USB image
     Returns True if any changes were made.
     """
     log.info("Starting photo sync...")
@@ -205,12 +274,20 @@ def sync_photos(config: dict, state: dict) -> bool:
             usb_dest.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(str(staging_file), str(usb_dest))
 
-            # Update state
-            synced[file_key] = {
+            # Build state entry
+            state_entry = {
                 "size": info["size"],
                 "mod_time": info["mod_time"],
                 "usb_path": str(usb_dest.relative_to(MOUNT_POINT)),
+                "people": [],
             }
+
+            # Run face recognition and copy to person folders
+            recognize_and_copy_to_person_folders(
+                recognizer, staging_file, Path(rel_path).name, state_entry
+            )
+
+            synced[file_key] = state_entry
             changes_made = True
 
             # Clean up staging file
@@ -220,15 +297,24 @@ def sync_photos(config: dict, state: dict) -> bool:
     deleted_keys = [k for k in synced if k not in remote_map]
     for key in deleted_keys:
         info = synced[key]
+
+        # Remove from main location
         usb_path = MOUNT_POINT / info.get("usb_path", "")
         if usb_path.exists():
             log.info(f"Removing deleted photo: {usb_path}")
             usb_path.unlink()
-        # Also remove from Alle Fotos
+
+        # Remove from Alle Fotos
         filename = Path(key).name
         all_photos_file = MOUNT_POINT / ALL_PHOTOS_DIR / filename
         if all_photos_file.exists():
             all_photos_file.unlink()
+
+        # Remove from person folders
+        people = info.get("people", [])
+        if people:
+            remove_from_person_folders(filename, people)
+
         del synced[key]
         changes_made = True
 
@@ -268,11 +354,14 @@ def main():
         )
         sys.exit(1)
 
+    # Initialize face recognition (if configured)
+    recognizer = create_face_recognizer(config)
+
     # Stop USB gadget → mount image → sync → restart gadget
     stop_usb_gadget()
 
     try:
-        changes = sync_photos(config, state)
+        changes = sync_photos(config, state, recognizer)
     except Exception as e:
         log.error(f"Sync failed: {e}", exc_info=True)
         changes = False
