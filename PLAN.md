@@ -8,162 +8,163 @@ A digital picture frame for grandma. Family members (~20 people) upload photos f
 
 ## Implementation Paths
 
-Three approaches, from zero-code to fully custom. They can be adopted incrementally — start with Path A, evolve to B or C if needed.
+Three approaches, from near-zero-code to fully custom. They can be adopted incrementally — start with Path A, evolve to B or C if needed.
 
-### Path A: Zero-code photo frame (deploy today)
+### Hardware: Raspberry Pi USB Gadget + Samsung TV
 
-Two hardware options — both plug into grandma's existing Samsung TV via HDMI, controlled with her existing TV remote (HDMI-CEC).
+All paths use the same display hardware:
+- **Raspberry Pi Zero 2 W** (~€20) plugged into grandma's Samsung TV USB port
+- RPi emulates a USB mass storage device — TV sees it as a normal USB drive
+- TV's built-in media player shows photos as slideshow (grandma already knows how to use this!)
+- RPi connects to WiFi and syncs photos from cloud storage in the background
+- Powered by the TV's USB port — no extra cables
+- Grandma uses her existing Samsung TV remote
 
-#### Option 1: Chromecast with Google TV (~€35) + Google Photos
+```
+Family uploads photos          Cloud sync              Display
+─────────────────────        ─────────────           ──────────────
 
-**How it works:**
-1. Create a Google account (e.g. `familyframe@gmail.com`)
-2. Create a shared Google Photos album, share the link with all family members
-3. Family adds photos via Google Photos app or the shared album link (no Google account needed to add)
-4. On Chromecast: Settings → Display → Ambient Mode → Google Photos → select the shared album
-5. Done. Grandma sees photos automatically.
+OneDrive shared folder                                RPi Zero 2 W
+  (or Google Drive)       →  RPi syncs via WiFi  →   emulates USB drive  →  Samsung TV
+                             (rclone, cron job)       with photos             built-in
+                                                                              slideshow
+```
 
-**What you get for free:**
-- Slideshow on TV (ambient mode)
-- Family uploads via Google Photos app or shared link (no account needed to add via link)
-- Face recognition (Google's built-in, excellent)
-- Person albums (auto-grouped by Google)
-- "Memories" / "On this day" (in Google Photos app)
-- Captions (photo descriptions in Google Photos)
-- Album selection & person filter via Google TV remote
-- Multiple event albums (family creates them in Google Photos)
-- Zero maintenance
+### Cloud Storage: OneDrive (recommended)
 
-**Storage:** 15 GB free (shared with Gmail/Drive), €2/month for 100 GB if needed
+**Google Photos is NOT viable** — Google removed third-party API read access in March 2025. rclone can no longer download photos from Google Photos albums.
 
-#### Option 2: Amazon Fire TV Stick (~€25-35) + Amazon Photos
+| Service | rclone sync | Free storage | Upload friction | Verdict |
+|---|---|---|---|---|
+| **OneDrive** | Works perfectly | **1 TB (existing M365)** | Low (shared folder link, no account needed) | **Recommended** |
+| **Google Drive** | Works perfectly | 15 GB | Low (shared folder link, no account needed) | Good alternative |
+| Google Photos | **Broken** (API removed March 2025) | 15 GB | Low | NOT VIABLE |
+| Dropbox | Works | 2 GB (too small) | Medium (account needed) | Poor |
+| iCloud | No API / no rclone | 5 GB | Apple-only | NOT VIABLE |
+| Amazon Photos | No third-party API | Unlimited w/ Prime | App required | NOT VIABLE |
 
-**How it works:**
-1. Create an Amazon account (or use existing Prime account)
-2. Create a shared album in Amazon Photos (or use "Family Vault" with Prime)
-3. Invite family members — they install Amazon Photos app and add photos
-4. On Fire TV: Settings → Display → Screensaver → Amazon Photos → select the shared album
-5. Done. Same result.
+**OneDrive wins:** existing M365 subscription with 1 TB, rclone syncs perfectly, family uploads via shared folder link (no Microsoft account needed).
 
-**What you get for free:**
-- Slideshow on TV (screensaver)
-- Family uploads via Amazon Photos app
-- Face recognition (built-in)
-- Shared albums / Family Vault
-- Alexa voice control ("Alexa, show my photos")
-- Zero maintenance
+**Google Drive** is a viable alternative if starting fresh (15 GB free, same rclone support, same upload friction). Could be offered as a user-configurable choice.
 
-**Storage:** 5 GB free, **unlimited with Amazon Prime** (huge advantage if family already has Prime)
+### Path A: Minimal setup (near-zero code)
 
-#### Chromecast vs Fire TV Stick
+**What you set up:**
+1. Share OneDrive folder `/FamilyFrame/photos/` with all family members (link sharing, no account needed)
+2. Family uploads photos via OneDrive app or shared link in browser
+3. Set up RPi Zero 2 W with rclone to sync from OneDrive → local filesystem → USB gadget
+4. Plug RPi into Samsung TV USB port
+5. Grandma opens USB media player on TV → slideshow
 
-| | Chromecast + Google Photos | Fire TV Stick + Amazon Photos |
-|---|---|---|
-| **Price** | ~€35 | ~€25-35 (often on sale) |
-| **Free storage** | 15 GB | 5 GB (unlimited with Prime) |
-| **Upload without account** | Yes (shared link) | No (need Amazon account + app) |
-| **Upload friction for 20 people** | Low (just a link) | Higher (everyone needs Amazon app) |
-| **Face recognition** | Excellent | Good |
-| **Voice control** | Google Assistant | Alexa |
-| **Best if** | Mixed family, no Prime | Family has Amazon Prime |
+**What you build:**
+- `raspberry-pi/setup.sh` — automated RPi setup: rclone config, USB gadget mode, cron sync job
+- A cron job that runs `rclone sync` every N minutes and refreshes the USB disk image
 
-**Recommendation:** Chromecast + Google Photos for most families (lowest upload friction). Fire TV Stick + Amazon Photos if the family already has Prime (unlimited free storage, cheaper hardware).
+**What you get:**
+- Auto-updating slideshow on grandma's existing TV
+- Family uploads via OneDrive app, shared link, or drag-and-drop in browser
+- Grandma navigates folders/photos with her existing TV remote
+- Full offline support (photos are local on RPi)
+- Zero recurring cost (existing M365)
 
-#### What you don't get with either option:
-- Smart rotation (weighted by newness, favorites, birthdays) — random only
-- WhatsApp as upload channel
-- Custom overlay with badges ("Neu", "Vor 3 Jahren", birthday highlights)
-- Night mode dimming (screen off only, no gradual dim)
-- Remote admin configuration
-- Upload via simple web page with PIN (family needs Google Photos app or link)
-
-**Cost:** ~€25-35 one-time (streaming stick) + €0/month
-
-**Effort:** 15 minutes setup. Zero code. Zero maintenance.
-
-### Path B: Lightweight custom PWA on Google Photos (minimal code)
-
-**Setup:** Chromecast or Fire TV Stick plugged into grandma's TV. Our custom PWA runs in a kiosk browser (Chrome on Chromecast, Silk or sideloaded Fully Kiosk on Fire TV), but uses Google Photos as the storage backend instead of OneDrive. Both sticks work equally well for running our PWA.
-
-**What we build (thin layer):**
-- Display PWA with smart rotation algorithm, custom overlays, birthday highlights
-- Backend: one lightweight API that reads from Google Photos API and serves photo list + metadata
-- Cloudant: stores only our custom metadata (favorites, birthday config, rotation state)
-- Keyboard/remote navigation (TV remote via HDMI-CEC)
-
-**What we skip (Google handles it):**
-- Photo storage & upload infrastructure (Google Photos shared albums)
-- Face recognition (Google's built-in)
-- EXIF extraction & thumbnails (Google does this automatically)
-- OneDrive integration, Graph API webhooks, subscription renewal
-- Upload page (family uses Google Photos app/link)
-- WhatsApp webhook (family uses Google Photos instead)
-
-**What you get beyond Path A:**
-- Smart weighted rotation (new photos 3x, favorites 2.5x, "on this day" 4x, birthday 3x)
-- Custom overlay with badges and captions
-- Night mode CSS dimming
-- TV remote navigation menu
-- Remote-configurable settings
+**What you don't get:**
+- Smart rotation / weighted slideshow (TV's media player shows in folder order or filename order)
+- Captions / overlays (TV shows filename at most)
+- WhatsApp upload channel
+- Face recognition / person filter
 - Birthday highlights
+- Admin interface
 
-**Limitations:**
-- No WhatsApp upload channel (could be added later)
-- No person-based API queries (Google removed this from their API — workaround: family creates per-person albums, or we accept this limitation)
-- Google Photos API rate limit: 10,000 requests/day (more than sufficient)
+**Cost:** ~€20 one-time (RPi Zero 2 W) + €0/month
 
-**Cost:** ~€35 one-time + €0/month
+**Effort:** ~1-2 days setup + scripting. Minimal maintenance (rclone is very stable).
 
-**Effort:** ~1-2 weeks development. Significantly less code than Path C.
+### Path B: RPi with custom slideshow (moderate code)
 
-### Path C: Full custom system (current approach)
+Same hardware as Path A, but instead of relying on the TV's built-in media player, the RPi generates an **optimized slideshow video or image sequence** that includes our smart features.
 
-**Setup:** Any display device (tablet, RPi, Chromecast + kiosk browser). Our PWA with full backend on IBM Cloud, OneDrive as storage.
+**Two sub-options:**
 
-**What we build (everything):**
-- Display PWA with all features (smart rotation, overlays, person filter, touch + remote controls)
-- Full backend: 6 IBM Cloud Functions (process_new_photo, display_sync_api, upload_api, whatsapp_webhook, admin_api, refresh_subscription)
-- OneDrive integration with Graph API webhooks
-- Azure Face API for face recognition
-- WhatsApp Cloud API for photo uploads via chat
-- Web upload page (PWA with Share Target API)
-- Admin interface (photo management, settings, face training)
-- Cloudant for all metadata
+#### B1: RPi generates a slideshow video file
+
+- RPi syncs photos from OneDrive via rclone
+- A Python script on RPi creates an MP4 slideshow video (using ffmpeg) with:
+  - Photos in smart-weighted order (new photos more often, "on this day", birthday highlights)
+  - Caption text burned into the video as subtitles or overlay
+  - Fade transitions between photos
+  - "Neu" / "Vor X Jahren" badges rendered onto frames
+- Video file exposed via USB gadget → TV plays it on loop
+- Re-generated periodically (e.g. daily at 3 AM) when new photos arrive
+
+**Advantages:** TV just plays a video — maximally simple. All smart logic runs on RPi.
+**Limitation:** Not truly interactive — grandma can't filter by person. New photos only appear after next regeneration cycle. Video generation takes time/CPU on a Pi Zero.
+
+#### B2: RPi as HDMI display (not USB gadget)
+
+- RPi connects to TV via HDMI (not USB)
+- RPi runs a lightweight slideshow application (e.g. Python + pygame, or fbi/feh for framebuffer)
+- Smart rotation, overlays, transitions all rendered by the RPi directly
+- Keyboard input from TV remote via HDMI-CEC (using libcec) for person filter / album selection
+
+**Advantages:** Full interactive control, real-time updates, person filter via TV remote.
+**Limitation:** Requires HDMI port (not USB), RPi Zero 2 W may be underpowered for smooth rendering (RPi 4 recommended, ~€45-60). Grandma switches TV input to HDMI instead of USB.
+
+**What you get beyond Path A (both sub-options):**
+- Smart weighted rotation (new 3x, favorites 2.5x, "on this day" 4x, birthday 3x)
+- Captions and date/location overlay
+- Birthday highlights
+- "Neu" / "Vor X Jahren" badges
+- B2 only: TV remote navigation for person filter / albums
+
+**Cost:** ~€20 (B1, Pi Zero) or ~€50-70 (B2, Pi 4 + case)
+
+**Effort:** ~1-2 weeks development.
+
+### Path C: Full custom system with cloud backend
+
+Everything from the original plan: IBM Cloud Functions backend, multiple upload channels (WhatsApp, web upload page, OneDrive, email), Azure Face API, admin interface. Display via RPi (HDMI, Path B2 style) or PWA on tablet/streaming stick.
 
 **What you get beyond Path B:**
 - WhatsApp as upload channel (easiest for non-tech family members)
-- Face recognition with person-based filtering via API
 - Web upload page with PIN (works for guests, no app needed)
+- Face recognition with person-based filtering
 - Full admin interface with photo moderation
-- Multiple upload channels (WhatsApp, web, OneDrive, email)
-- Complete control over every aspect
+- Email upload channel
+- Multiple display device support (tablet, RPi, streaming stick)
 
-**Cost:** ~€25-270 one-time (streaming stick or display device) + €0/month (all free tiers)
+**Cost:** ~€20-270 one-time (display device) + €0/month (all free tiers)
 
 **Effort:** ~6-8 weeks development. Full maintenance responsibility.
 
 ### Comparison
 
-| | Path A | Path B | Path C |
-|---|---|---|---|
-| **Setup time** | 15 minutes | 1-2 weeks dev | 6-8 weeks dev |
-| **Maintenance** | Zero | Low | Medium |
-| **Slideshow** | Random | Smart weighted | Smart weighted |
-| **Upload method** | Google Photos app/link | Google Photos app/link | WhatsApp, web, OneDrive, email |
-| **Face recognition** | Google (excellent) | Google (no API query) | Azure Face API (API queryable) |
-| **Custom overlay** | No | Yes | Yes |
-| **Birthday highlights** | No | Yes | Yes |
-| **WhatsApp upload** | No | No (add later) | Yes |
-| **Admin interface** | Google Photos | Lightweight | Full |
-| **TV remote nav** | Google TV built-in | Custom menu | Custom menu |
-| **Tablet support** | No (Chromecast only) | Yes (PWA) | Yes (PWA) |
-| **Offline resilience** | Chromecast caches | Service Worker | Service Worker + optional rclone |
+| | Path A | Path B1 | Path B2 | Path C |
+|---|---|---|---|---|
+| **Hardware** | RPi Zero USB | RPi Zero USB | RPi 4 HDMI | RPi / tablet / stick |
+| **Cost** | ~€20 | ~€20 | ~€50-70 | ~€20-270 |
+| **Setup time** | 1-2 days | 1-2 weeks | 1-2 weeks | 6-8 weeks |
+| **Maintenance** | Minimal | Low | Low | Medium |
+| **Slideshow** | TV built-in (basic) | Smart (pre-rendered) | Smart (real-time) | Smart (real-time) |
+| **Upload method** | OneDrive link/app | OneDrive link/app | OneDrive link/app | WhatsApp, web, OneDrive, email |
+| **Captions/overlay** | No | Yes (burned in) | Yes (live) | Yes (live) |
+| **Birthday highlights** | No | Yes | Yes | Yes |
+| **Person filter** | No | No | Yes (TV remote) | Yes |
+| **New photo delay** | ~5 min (rclone sync) | Next regen cycle | ~5 min (rclone sync) | ~5 min |
+| **WhatsApp upload** | No | No | No | Yes |
+| **Grandma's experience** | USB media player (familiar!) | USB video (familiar!) | HDMI input (new) | Varies |
 
 ### Recommended strategy
 
-**Start with Path A today.** Grandma sees family photos on her TV tonight. Share the album link in the family WhatsApp group — everyone can start uploading immediately.
+**Start with Path A this weekend.** RPi Zero 2 W + rclone + USB gadget. Grandma sees auto-updating photos on her TV using the same USB media player she already uses for videos. Family uploads via OneDrive shared link.
 
-**Evaluate after 2-4 weeks:** Does the family miss smart rotation, WhatsApp uploads, birthday highlights? If the answer is "this is good enough" — stop here. If specific features are missed, evolve to Path B (add our PWA on top of Google Photos). Only go to Path C if the family actively wants WhatsApp uploads or full admin control.
+**If the family wants captions and smart features:** Move to Path B1 (generate slideshow video on RPi) or B2 (RPi as HDMI display with interactive controls).
+
+**Only go to Path C** if WhatsApp upload or full admin control is genuinely needed.
+
+### Previous options (still viable for other setups)
+
+**Chromecast with Google TV / Google TV Streamer / Amazon Fire TV Stick:**
+These remain good options if grandma gets a newer TV or a second display is needed elsewhere. The Chromecast HD (~€30) or Google TV Streamer (~€100) with Google Photos Ambient Mode provides a zero-code slideshow. Fire TV Stick (~€25-35) with Amazon Photos is best if the family has Prime. However, for grandma's current Samsung TV with existing USB workflow, the RPi USB gadget approach is simpler and cheaper.
 
 ---
 
