@@ -47,124 +47,150 @@ OneDrive shared folder                                RPi Zero 2 W
 
 **Google Drive** is a viable alternative if starting fresh (15 GB free, same rclone support, same upload friction). Could be offered as a user-configurable choice.
 
-### Path A: Minimal setup (near-zero code)
+### Face Recognition: Always our own
+
+No cloud storage provider exposes face recognition results via API — even those with excellent built-in face grouping (Google Photos, soon OneDrive). The grouping only works inside their own UI. We always need a separate service.
+
+| Service | Free tier | Identifies *who*? | Runs on RPi Zero? | Notes |
+|---|---|---|---|---|
+| **Azure Face API** | **30K/month (permanent)** | Yes (train person group) | Yes (HTTP call) | **Best fit** — already in our codebase |
+| Google Cloud Vision | 1K/month (permanent) | **No** — detects faces, can't identify who | Yes (HTTP call) | Not useful for person sorting |
+| AWS Rekognition | 1K/month (12 months only) | Yes (face collections) | Yes (HTTP call) | Free tier expires |
+| Python `face_recognition` lib | Unlimited, free forever | Yes (train with samples) | **No** — too slow on Pi Zero (minutes/photo). Needs Pi 4+ (~2-5 sec/photo) | Good if using RPi 4 |
+
+**Recommendation: Azure Face API.** 30K free transactions/month (permanent), works as a simple HTTP call from the RPi during sync. A family of 20 uploading ~10 photos/day = ~300/month — well within limits. Already implemented in `backend/shared/face_recognition.py`.
+
+**How face recognition integrates with the USB gadget approach:**
+The RPi sync script downloads a new photo → calls Azure Face API → gets list of recognized people → copies the photo into person-named folders on the USB drive. Grandma browses by person using her TV remote's folder navigation:
+
+```
+USB Drive (as seen by TV)
+├── Alle Fotos/              ← all photos (flat)
+├── Anna/                    ← photos with Anna in them
+├── Thomas/                  ← photos with Thomas
+├── Maria/                   ← photos with Maria
+└── Urlaub Kroatien/         ← event folder (created by family in OneDrive)
+```
+
+A photo with Anna and Thomas appears in both `/Anna/` and `/Thomas/` (symlinks or copies). The `/Alle Fotos/` folder always contains everything. This is native TV folder navigation — no custom UI, no learning curve for grandma.
+
+### Path A: Minimal setup with person folders (near-zero code)
 
 **What you set up:**
 1. Share OneDrive folder `/FamilyFrame/photos/` with all family members (link sharing, no account needed)
 2. Family uploads photos via OneDrive app or shared link in browser
-3. Set up RPi Zero 2 W with rclone to sync from OneDrive → local filesystem → USB gadget
-4. Plug RPi into Samsung TV USB port
-5. Grandma opens USB media player on TV → slideshow
+3. Set up RPi Zero 2 W with rclone to sync from OneDrive → local filesystem
+4. RPi sync script calls Azure Face API on new photos, sorts into person folders
+5. RPi exposes folder structure as USB gadget
+6. Plug RPi into Samsung TV USB port
+7. Grandma opens USB media player on TV → browses "Alle Fotos" or person folders
 
 **What you build:**
-- `raspberry-pi/setup.sh` — automated RPi setup: rclone config, USB gadget mode, cron sync job
-- A cron job that runs `rclone sync` every N minutes and refreshes the USB disk image
+- `raspberry-pi/setup.sh` — automated RPi setup: rclone config, USB gadget mode, Azure Face API config
+- `raspberry-pi/sync.py` — sync script: rclone pull → face recognition → sort into person folders → refresh USB image
+- A cron job that runs `sync.py` every N minutes
 
 **What you get:**
 - Auto-updating slideshow on grandma's existing TV
 - Family uploads via OneDrive app, shared link, or drag-and-drop in browser
-- Grandma navigates folders/photos with her existing TV remote
+- **Person folders** — grandma can browse photos of specific people
+- **Event folders** — family creates them in OneDrive, they appear on TV automatically
+- Grandma navigates with her existing TV remote (familiar USB media player)
 - Full offline support (photos are local on RPi)
-- Zero recurring cost (existing M365)
+- Zero recurring cost (existing M365 + Azure free tier)
 
 **What you don't get:**
 - Smart rotation / weighted slideshow (TV's media player shows in folder order or filename order)
 - Captions / overlays (TV shows filename at most)
 - WhatsApp upload channel
-- Face recognition / person filter
-- Birthday highlights
+- Birthday highlights, "on this day" badges
 - Admin interface
 
 **Cost:** ~€20 one-time (RPi Zero 2 W) + €0/month
 
-**Effort:** ~1-2 days setup + scripting. Minimal maintenance (rclone is very stable).
+**Effort:** ~2-3 days setup + scripting. Minimal maintenance.
 
-### Path B: RPi with custom slideshow (moderate code)
+### Path B: Enhanced USB experience (moderate code)
 
-Same hardware as Path A, but instead of relying on the TV's built-in media player, the RPi generates an **optimized slideshow video or image sequence** that includes our smart features.
+Same hardware and USB gadget approach as Path A — grandma's experience stays the same (USB media player on TV). The RPi does more processing in the background to enhance the photos before exposing them.
 
-**Two sub-options:**
+**Enhancements over Path A:**
+- **Captions burned into photos** — RPi uses Pillow/ImageMagick to render caption text, date, and location as a semi-transparent overlay at the bottom of each photo before placing it on the USB drive. Grandma sees captions directly on the photo, no TV UI needed.
+- **"Neu" badge** — new photos (< 7 days) get a small "Neu" marker rendered into the top corner
+- **Smart filename ordering** — TV media players typically sort by filename. RPi names files strategically (e.g. `001_newest.jpg`, `002_newest.jpg`, ...) so newest photos appear first, or shuffles the numbering periodically for variety
+- **Photo optimization** — resize to TV resolution, strip unnecessary metadata, ensure landscape orientation for best display
+- **"On this day" folder** — auto-generated folder with photos from this date in previous years
 
-#### B1: RPi generates a slideshow video file
+```
+USB Drive (as seen by TV)
+├── Alle Fotos/              ← all photos, smart-sorted by filename
+├── Neue Fotos/              ← last 7 days only
+├── Heute vor.../            ← "on this day" photos from previous years
+├── Anna/                    ← photos with Anna
+├── Thomas/                  ← photos with Thomas
+├── Urlaub Kroatien/         ← event folder
+```
 
-- RPi syncs photos from OneDrive via rclone
-- A Python script on RPi creates an MP4 slideshow video (using ffmpeg) with:
-  - Photos in smart-weighted order (new photos more often, "on this day", birthday highlights)
-  - Caption text burned into the video as subtitles or overlay
-  - Fade transitions between photos
-  - "Neu" / "Vor X Jahren" badges rendered onto frames
-- Video file exposed via USB gadget → TV plays it on loop
-- Re-generated periodically (e.g. daily at 3 AM) when new photos arrive
+**What you build (on top of Path A):**
+- `raspberry-pi/enhance.py` — photo enhancement: burn captions, add badges, resize, sort
+- Extended `sync.py` — generates special folders ("Neue Fotos", "Heute vor...")
+- Config file for captions, badge style, sort order
 
-**Advantages:** TV just plays a video — maximally simple. All smart logic runs on RPi.
-**Limitation:** Not truly interactive — grandma can't filter by person. New photos only appear after next regeneration cycle. Video generation takes time/CPU on a Pi Zero.
-
-#### B2: RPi as HDMI display (not USB gadget)
-
-- RPi connects to TV via HDMI (not USB)
-- RPi runs a lightweight slideshow application (e.g. Python + pygame, or fbi/feh for framebuffer)
-- Smart rotation, overlays, transitions all rendered by the RPi directly
-- Keyboard input from TV remote via HDMI-CEC (using libcec) for person filter / album selection
-
-**Advantages:** Full interactive control, real-time updates, person filter via TV remote.
-**Limitation:** Requires HDMI port (not USB), RPi Zero 2 W may be underpowered for smooth rendering (RPi 4 recommended, ~€45-60). Grandma switches TV input to HDMI instead of USB.
-
-**What you get beyond Path A (both sub-options):**
-- Smart weighted rotation (new 3x, favorites 2.5x, "on this day" 4x, birthday 3x)
-- Captions and date/location overlay
-- Birthday highlights
-- "Neu" / "Vor X Jahren" badges
-- B2 only: TV remote navigation for person filter / albums
-
-**Cost:** ~€20 (B1, Pi Zero) or ~€50-70 (B2, Pi 4 + case)
+**Cost:** ~€20 one-time + €0/month (same hardware as Path A)
 
 **Effort:** ~1-2 weeks development.
 
 ### Path C: Full custom system with cloud backend
 
-Everything from the original plan: IBM Cloud Functions backend, multiple upload channels (WhatsApp, web upload page, OneDrive, email), Azure Face API, admin interface. Display via RPi (HDMI, Path B2 style) or PWA on tablet/streaming stick.
+Everything from the original plan: IBM Cloud Functions backend, multiple upload channels (WhatsApp, web upload page, OneDrive, email), admin interface. Display still via USB gadget (grandma's familiar UI), but with richer backend support.
 
 **What you get beyond Path B:**
 - WhatsApp as upload channel (easiest for non-tech family members)
 - Web upload page with PIN (works for guests, no app needed)
-- Face recognition with person-based filtering
-- Full admin interface with photo moderation
+- Full admin interface with photo moderation (hide/show, edit captions)
 - Email upload channel
-- Multiple display device support (tablet, RPi, streaming stick)
+- Backend processes photos centrally (face recognition, metadata, auto-sort) before they land in OneDrive
+- RPi just syncs the pre-processed result
 
-**Cost:** ~€20-270 one-time (display device) + €0/month (all free tiers)
+**Cost:** ~€20 one-time (RPi) + €0/month (all free tiers)
 
-**Effort:** ~6-8 weeks development. Full maintenance responsibility.
+**Effort:** ~4-6 weeks development. Moderate maintenance.
 
 ### Comparison
 
-| | Path A | Path B1 | Path B2 | Path C |
-|---|---|---|---|---|
-| **Hardware** | RPi Zero USB | RPi Zero USB | RPi 4 HDMI | RPi / tablet / stick |
-| **Cost** | ~€20 | ~€20 | ~€50-70 | ~€20-270 |
-| **Setup time** | 1-2 days | 1-2 weeks | 1-2 weeks | 6-8 weeks |
-| **Maintenance** | Minimal | Low | Low | Medium |
-| **Slideshow** | TV built-in (basic) | Smart (pre-rendered) | Smart (real-time) | Smart (real-time) |
-| **Upload method** | OneDrive link/app | OneDrive link/app | OneDrive link/app | WhatsApp, web, OneDrive, email |
-| **Captions/overlay** | No | Yes (burned in) | Yes (live) | Yes (live) |
-| **Birthday highlights** | No | Yes | Yes | Yes |
-| **Person filter** | No | No | Yes (TV remote) | Yes |
-| **New photo delay** | ~5 min (rclone sync) | Next regen cycle | ~5 min (rclone sync) | ~5 min |
-| **WhatsApp upload** | No | No | No | Yes |
-| **Grandma's experience** | USB media player (familiar!) | USB video (familiar!) | HDMI input (new) | Varies |
+| | Path A | Path B | Path C |
+|---|---|---|---|
+| **Hardware** | RPi Zero 2 W USB | RPi Zero 2 W USB | RPi Zero 2 W USB |
+| **Cost** | ~€20 | ~€20 | ~€20 |
+| **Setup time** | 2-3 days | 1-2 weeks | 4-6 weeks |
+| **Maintenance** | Minimal | Low | Moderate |
+| **Upload method** | OneDrive link/app | OneDrive link/app | WhatsApp, web, OneDrive, email |
+| **Person folders** | Yes (Azure Face API) | Yes (Azure Face API) | Yes (Azure Face API) |
+| **Captions on photos** | No | Yes (burned in) | Yes (burned in) |
+| **"Neu" badge** | No | Yes (burned in) | Yes (burned in) |
+| **"On this day" folder** | No | Yes | Yes |
+| **Smart sort order** | No | Yes (filename tricks) | Yes |
+| **WhatsApp upload** | No | No | Yes |
+| **Admin interface** | No | No | Yes |
+| **Grandma's experience** | USB media player (familiar!) | USB media player (familiar!) | USB media player (familiar!) |
+
+**Key principle:** All paths use the same grandma-facing experience — Samsung TV's built-in USB media player. Paths differ only in what the RPi does behind the scenes.
 
 ### Recommended strategy
 
-**Start with Path A this weekend.** RPi Zero 2 W + rclone + USB gadget. Grandma sees auto-updating photos on her TV using the same USB media player she already uses for videos. Family uploads via OneDrive shared link.
+**Start with Path A.** RPi Zero 2 W + rclone + Azure Face API + USB gadget. Grandma sees photos organized by person on her TV, using the same USB media player she already knows. Family uploads via OneDrive shared link. ~2-3 days to set up.
 
-**If the family wants captions and smart features:** Move to Path B1 (generate slideshow video on RPi) or B2 (RPi as HDMI display with interactive controls).
+**Evolve to Path B** when you want captions and smarter presentation. Same hardware, same grandma experience — just better processing.
 
-**Only go to Path C** if WhatsApp upload or full admin control is genuinely needed.
+**Path C** only if WhatsApp upload or admin moderation is genuinely needed.
 
-### Previous options (still viable for other setups)
+### Alternative display options (for other setups)
 
 **Chromecast with Google TV / Google TV Streamer / Amazon Fire TV Stick:**
-These remain good options if grandma gets a newer TV or a second display is needed elsewhere. The Chromecast HD (~€30) or Google TV Streamer (~€100) with Google Photos Ambient Mode provides a zero-code slideshow. Fire TV Stick (~€25-35) with Amazon Photos is best if the family has Prime. However, for grandma's current Samsung TV with existing USB workflow, the RPi USB gadget approach is simpler and cheaper.
+Still viable if setting up a second frame elsewhere, or if grandma gets a new TV. Chromecast HD (~€30) or Google TV Streamer (~€100) with Google Photos Ambient Mode for zero-code slideshow (note: Google Photos face grouping works in Ambient Mode but isn't API-accessible). Fire TV Stick (~€25-35) with Amazon Photos for Prime families.
+
+**Tablet (Android / iPad):**
+Our existing display PWA code works for tablet-based setups. Useful as a dedicated bedside frame or for a second family member who wants their own display.
 
 ---
 
