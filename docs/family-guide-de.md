@@ -44,7 +44,22 @@ Omas Fernseher zeigt automatisch alle Fotos an, die ihr hochladet. Einfach ein F
 
 ---
 
-## Weg 2: Ueber den Webbrowser (kein App noetig)
+## Weg 2: Web-Upload (kein Microsoft-Konto noetig)
+
+Fuer alle, die kein OneDrive nutzen moechten:
+
+1. Oeffne **[Upload-Link]** im Browser (Handy, Tablet, oder Laptop)
+2. Gib den **Familien-PIN** ein (bekommst du vom Admin)
+3. Waehle einen **Ordner** aus (z.B. "Weihnachten 2027") oder lade in "Allgemein" hoch
+4. Waehle **Fotos** aus oder ziehe sie per Drag & Drop ins Fenster
+5. Optional: Schreibe eine **Bildunterschrift** und waehle deinen **Namen** aus
+6. Tippe auf **Hochladen**
+
+> **Tipp**: Du kannst auch neue Ordner direkt auf der Upload-Seite erstellen.
+
+---
+
+## Weg 3: Ueber den OneDrive-Webbrowser (kein App noetig)
 
 1. Oeffne den **Einladungslink** aus der E-Mail im Browser
 2. Ziehe Fotos per **Drag & Drop** in den Ordner
@@ -68,7 +83,7 @@ Oma sieht den Ordner auf ihrem Fernseher und kann ihn mit der Fernbedienung oeff
 
 ## Was Oma auf dem Fernseher sieht
 
-Oma oeffnet wie gewohnt den **USB-Mediaplayer** auf ihrem Samsung-Fernseher. Sie sieht folgende Ordner:
+Oma oeffnet wie gewohnt den **USB-Mediaplayer** auf ihrem Panasonic-Fernseher. Sie sieht folgende Ordner:
 
 ```
 FAMILYFRAME (USB)

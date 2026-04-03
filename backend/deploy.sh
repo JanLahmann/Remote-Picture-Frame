@@ -118,6 +118,10 @@ echo "Endpoints:"
 NAMESPACE=$(ibmcloud fn namespace get --properties | grep "ID" | awk '{print $2}' 2>/dev/null || echo "<namespace>")
 REGION=$(ibmcloud target | grep "Region" | awk '{print $2}' 2>/dev/null || echo "<region>")
 BASE="https://${REGION}.functions.appdomain.cloud/api/v1/web/${NAMESPACE}/${PACKAGE_NAME}"
-echo "  process_new_photo: ${BASE}/process_new_photo"
+echo "  upload_api:        ${BASE}/upload_api"
 echo "  display_sync_api:  ${BASE}/display_sync_api"
+echo "  process_new_photo: ${BASE}/process_new_photo"
 echo "  refresh_subscription: ${BASE}/refresh_subscription"
+echo ""
+echo "Set API_BASE in upload-page/index.html to:"
+echo "  ${BASE}"

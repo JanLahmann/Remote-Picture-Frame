@@ -356,6 +356,19 @@
       <!-- Image previews -->
       <div class="previews" id="previews"></div>
 
+      <!-- Folder selection -->
+      <div class="field">
+        <label for="folderSelect">Ordner</label>
+        <select id="folderSelect">
+          <option value="">Allgemein (kein Ordner)</option>
+        </select>
+        <div style="display: flex; gap: 0.5rem; margin-top: 0.3rem;">
+          <input type="text" id="newFolderInput" placeholder="Neuer Ordner (z.B. Weihnachten 2027)" style="flex: 1; padding: 0.5rem; background: var(--surface); border: 1px solid #333; border-radius: 8px; color: var(--text); font-size: 0.85rem;" />
+          <button type="button" id="addFolderBtn" style="padding: 0.5rem 0.75rem; background: var(--surface-hover); border: 1px solid #444; border-radius: 8px; color: var(--primary); font-size: 0.85rem; cursor: pointer; white-space: nowrap;">+ Ordner</button>
+        </div>
+        <span class="hint">Fotos werden auf dem TV in diesen Ordner einsortiert</span>
+      </div>
+
       <!-- Caption -->
       <div class="field">
         <label for="caption">Bildunterschrift</label>
@@ -412,6 +425,9 @@
     // Family member names — loaded from backend settings, with local fallback
     let FAMILY_MEMBERS = [];
     const SETTINGS_ENDPOINT = API_BASE + '/display_sync_api?action=settings';
+
+    // Known event folders — can be extended by the user via the "new folder" input
+    let EVENT_FOLDERS = [];
 
     // --- State ---
     let selectedFiles = [];
@@ -476,6 +492,52 @@
     }
 
     loadFamilyMembers();
+
+    // --- Folder management ---
+    function loadFolders() {
+      // Restore saved custom folders from localStorage
+      try {
+        const saved = JSON.parse(localStorage.getItem('familyframe_folders') || '[]');
+        EVENT_FOLDERS = saved;
+      } catch (e) {
+        EVENT_FOLDERS = [];
+      }
+      populateFolderDropdown();
+    }
+
+    function populateFolderDropdown() {
+      while (folderSelect.options.length > 1) folderSelect.remove(1);
+      EVENT_FOLDERS.forEach(name => {
+        const opt = document.createElement('option');
+        opt.value = name;
+        opt.textContent = name;
+        folderSelect.appendChild(opt);
+      });
+    }
+
+    addFolderBtn.addEventListener('click', function () {
+      const name = newFolderInput.value.trim();
+      if (!name) return;
+      if (!EVENT_FOLDERS.includes(name)) {
+        EVENT_FOLDERS.push(name);
+        localStorage.setItem('familyframe_folders', JSON.stringify(EVENT_FOLDERS));
+        populateFolderDropdown();
+      }
+      folderSelect.value = name;
+      newFolderInput.value = '';
+    });
+
+    newFolderInput.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        addFolderBtn.click();
+      }
+    });
+
+    loadFolders();
+    const folderSelect = document.getElementById('folderSelect');
+    const newFolderInput = document.getElementById('newFolderInput');
+    const addFolderBtn = document.getElementById('addFolderBtn');
     const progressBar = document.getElementById('progressBar');
     const progressFill = document.getElementById('progressFill');
     const status = document.getElementById('status');
@@ -629,6 +691,7 @@
             caption: captionInput.value.trim(),
             description: descriptionInput.value.trim(),
             name: fixedUser || nameInput.value,
+            folder: folderSelect.value,
           }),
         });
 

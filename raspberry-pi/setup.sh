@@ -271,6 +271,18 @@ chown -R "$FRAME_USER:$FRAME_USER" "$FRAME_DIR"
 chown -R "$FRAME_USER:$FRAME_USER" "$LOG_DIR"
 chmod 600 "$CONFIG_DIR/config.env"
 
+# Allow sync user to run gadget scripts without password
+# (sync.py calls sudo usb-gadget-start/stop.sh)
+SUDOERS_FILE="/etc/sudoers.d/familyframe"
+cat > "$SUDOERS_FILE" << SUDOERS
+# FamilyFrame: allow sync user to manage USB gadget without password
+$FRAME_USER ALL=(root) NOPASSWD: $FRAME_DIR/usb-gadget-start.sh
+$FRAME_USER ALL=(root) NOPASSWD: $FRAME_DIR/usb-gadget-stop.sh
+$FRAME_USER ALL=(root) NOPASSWD: /usr/bin/sync
+SUDOERS
+chmod 440 "$SUDOERS_FILE"
+echo "    Created sudoers rules for $FRAME_USER"
+
 # Enable services
 systemctl daemon-reload
 systemctl enable familyframe-usb.service
