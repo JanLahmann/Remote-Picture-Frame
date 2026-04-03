@@ -64,6 +64,8 @@ apt-get install -y -qq \
     python3 \
     python3-pip \
     python3-requests \
+    python3-pil \
+    fonts-dejavu-core \
     dosfstools \
     exfatprogs
 
@@ -252,6 +254,12 @@ AZURE_FACE_ENDPOINT=
 # Maximum photo dimension (resize larger photos to save space on USB image)
 # Set to 0 to disable resizing
 MAX_PHOTO_DIMENSION=1920
+
+# Photo enhancement (Path B features)
+# Set to "true" to burn captions, dates, and "Neu" badges into photos
+# Also generates special folders: "Neue Fotos", "Heute vor..."
+# Requires python3-pil (Pillow) — installed by setup.sh
+ENHANCE_PHOTOS=false
 CONFIG
     echo "    Created config at $CONFIG_DIR/config.env"
 else
@@ -297,9 +305,9 @@ echo "  3. (Optional) Configure face recognition:"
 echo "     sudo nano /etc/familyframe/config.env"
 echo "     Set AZURE_FACE_KEY and AZURE_FACE_ENDPOINT"
 echo ""
-echo "  4. Copy sync.py to $FRAME_DIR:"
-echo "     sudo cp sync.py $FRAME_DIR/"
-echo "     sudo chown $FRAME_USER:$FRAME_USER $FRAME_DIR/sync.py"
+echo "  4. Copy scripts to $FRAME_DIR:"
+echo "     sudo cp sync.py face_recognition.py enhance.py $FRAME_DIR/"
+echo "     sudo chown $FRAME_USER:$FRAME_USER $FRAME_DIR/*.py"
 echo ""
 echo "  5. Reboot and plug USB data port into TV:"
 echo "     sudo reboot"

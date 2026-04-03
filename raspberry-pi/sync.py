@@ -17,10 +17,17 @@ import shutil
 import subprocess
 import sys
 import time
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Optional
 
 from face_recognition import FaceRecognizer
+
+try:
+    from enhance import enhance_photo, generate_special_folders, HAS_PIL
+    HAS_ENHANCE = HAS_PIL
+except ImportError:
+    HAS_ENHANCE = False
 
 # --- Configuration ---
 FRAME_DIR = Path("/opt/familyframe")
@@ -50,6 +57,7 @@ def load_config() -> dict:
         "AZURE_FACE_KEY": "",
         "AZURE_FACE_ENDPOINT": "",
         "MAX_PHOTO_DIMENSION": "1920",
+        "ENHANCE_PHOTOS": "false",
     }
     if CONFIG_FILE.exists():
         for line in CONFIG_FILE.read_text().splitlines():
@@ -249,6 +257,22 @@ def sync_photos(
         staging_file = STAGING_DIR / rel_path
 
         if rclone_download_file(config, rel_path, staging_file):
+            # Check if photo enhancement is enabled
+            do_enhance = (
+                HAS_ENHANCE
+                and config.get("ENHANCE_PHOTOS", "false").lower() == "true"
+            )
+
+            # Determine if photo is "new" (< 7 days)
+            is_new_photo = False
+            try:
+                mod_dt = datetime.fromisoformat(
+                    info["mod_time"].replace("Z", "+00:00").split(".")[0]
+                )
+                is_new_photo = (datetime.now(mod_dt.tzinfo) - mod_dt).days < 7
+            except (ValueError, IndexError):
+                pass
+
             # Determine target path on USB image
             # Files in subdirectories keep their folder structure
             # Files in root go to "Alle Fotos/"
@@ -269,10 +293,24 @@ def sync_photos(
                     usb_all = MOUNT_POINT / ALL_PHOTOS_DIR / f"{stem}_{folder_name}{suffix}"
 
                 usb_all.parent.mkdir(parents=True, exist_ok=True)
-                shutil.copy2(str(staging_file), str(usb_all))
+                if do_enhance:
+                    enhance_photo(
+                        staging_file, usb_all,
+                        date_taken=info.get("mod_time", ""),
+                        is_new=is_new_photo,
+                    )
+                else:
+                    shutil.copy2(str(staging_file), str(usb_all))
 
             usb_dest.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(str(staging_file), str(usb_dest))
+            if do_enhance:
+                enhance_photo(
+                    staging_file, usb_dest,
+                    date_taken=info.get("mod_time", ""),
+                    is_new=is_new_photo,
+                )
+            else:
+                shutil.copy2(str(staging_file), str(usb_dest))
 
             # Build state entry
             state_entry = {
@@ -327,6 +365,14 @@ def sync_photos(
             if not any(dp.iterdir()):
                 dp.rmdir()
                 log.info(f"Removed empty directory: {dp}")
+
+    # --- Generate special folders (always regenerated) ---
+    do_enhance = (
+        HAS_ENHANCE
+        and config.get("ENHANCE_PHOTOS", "false").lower() == "true"
+    )
+    if do_enhance:
+        generate_special_folders(MOUNT_POINT, synced)
 
     state["synced_files"] = synced
     state["last_sync"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())

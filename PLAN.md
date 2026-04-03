@@ -10,22 +10,26 @@ A digital picture frame for grandma. Family members (~20 people) upload photos f
 
 Three approaches, from near-zero-code to fully custom. They can be adopted incrementally — start with Path A, evolve to B or C if needed.
 
-### Hardware: Raspberry Pi USB Gadget + Samsung TV
+### Hardware: Raspberry Pi USB Gadget + Panasonic TV
 
 All paths use the same display hardware:
-- **Raspberry Pi Zero 2 W** (~€20) plugged into grandma's Samsung TV USB port
+- **Grandma's TV**: Panasonic TX-40FSW404 (40" Full HD, 1920x1080, 2x USB 2.0)
+  - JPEG baseline only (no progressive JPEG!), max 15,360 x 8,640
+  - Built-in USB media player with slideshow function
+  - FAT32 USB drives supported
+- **Raspberry Pi Zero 2 W** (~€20) plugged into TV's USB port
 - RPi emulates a USB mass storage device — TV sees it as a normal USB drive
 - TV's built-in media player shows photos as slideshow (grandma already knows how to use this!)
 - RPi connects to WiFi and syncs photos from cloud storage in the background
 - Powered by the TV's USB port — no extra cables
-- Grandma uses her existing Samsung TV remote
+- Grandma uses her existing Panasonic TV remote
 
 ```
 Family uploads photos          Cloud sync              Display
 ─────────────────────        ─────────────           ──────────────
 
 OneDrive shared folder                                RPi Zero 2 W
-  (or Google Drive)       →  RPi syncs via WiFi  →   emulates USB drive  →  Samsung TV
+  (or Google Drive)       →  RPi syncs via WiFi  →   emulates USB drive  →  Panasonic TV
                              (rclone, cron job)       with photos             built-in
                                                                               slideshow
 ```
@@ -82,7 +86,7 @@ A photo with Anna and Thomas appears in both `/Anna/` and `/Thomas/` (symlinks o
 3. Set up RPi Zero 2 W with rclone to sync from OneDrive → local filesystem
 4. RPi sync script calls Azure Face API on new photos, sorts into person folders
 5. RPi exposes folder structure as USB gadget
-6. Plug RPi into Samsung TV USB port
+6. Plug RPi into TV USB port
 7. Grandma opens USB media player on TV → browses "Alle Fotos" or person folders
 
 **What you build:**
@@ -174,7 +178,7 @@ Everything from the original plan: IBM Cloud Functions backend, multiple upload 
 | **Admin interface** | No | No | Yes |
 | **Grandma's experience** | USB media player (familiar!) | USB media player (familiar!) | USB media player (familiar!) |
 
-**Key principle:** All paths use the same grandma-facing experience — Samsung TV's built-in USB media player. Paths differ only in what the RPi does behind the scenes.
+**Key principle:** All paths use the same grandma-facing experience — Panasonic TV's built-in USB media player. Paths differ only in what the RPi does behind the scenes.
 
 ### Recommended strategy
 
