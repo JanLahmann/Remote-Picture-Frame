@@ -20,7 +20,6 @@ Ein separates kostenloses Microsoft-Konto nur fuer FamilyFrame. Familie sieht ni
 2. Erstelle z.B. `familyframe.mustermann@outlook.com`
 3. Melde dich an und gehe zu https://onedrive.live.com
 4. Erstelle den Ordner `/FamilyFrame/photos/`
-5. Erstelle den Ordner `/FamilyFrame/config/`
 
 ### Option B: Geteilter Ordner im bestehenden OneDrive
 
@@ -33,7 +32,6 @@ Einen Unterordner im bestehenden Family-OneDrive freigeben.
 **Einrichtung:**
 1. Melde dich bei https://onedrive.live.com mit deinem M365-Konto an
 2. Erstelle den Ordner `/FamilyFrame/photos/`
-3. Erstelle den Ordner `/FamilyFrame/config/`
 
 ---
 
@@ -42,59 +40,16 @@ Einen Unterordner im bestehenden Family-OneDrive freigeben.
 ```
 FamilyFrame/
   photos/                          ← Upload-Ordner (alle laden hier hoch)
-    Anna/                          ← automatisch erstellt vom Backend
-    Thomas/                        ← automatisch erstellt vom Backend
     Urlaub-Kroatien-2026/          ← optional: Familie kann Event-Ordner erstellen
-  config/
-    settings.json                  ← Einstellungen fuer den Bilderrahmen
+    Weihnachten-2027/              ← optional: weitere Event-Ordner
 ```
 
 ### Wie funktioniert das?
 
 - **Upload**: Alle Familienmitglieder laden Fotos direkt in `/FamilyFrame/photos/` hoch
-- **Auto-Sortierung**: Das Backend erkennt den Uploader (ueber OneDrive-Metadaten) und verschiebt das Foto automatisch in einen Unterordner mit dem Namen der Person (z.B. `/photos/Anna/`)
-- **Event-Ordner**: Familienmitglieder koennen optional eigene Unterordner erstellen (z.B. `/photos/Urlaub-Kroatien-2026/`). Fotos in Event-Ordnern werden **nicht** automatisch verschoben, sondern bleiben dort
-- **Fuer den Bilderrahmen macht es keinen Unterschied** — alle Fotos aus allen Unterordnern werden angezeigt
-
-### settings.json (Standardwerte)
-
-Erstelle die Datei `FamilyFrame/config/settings.json` mit folgendem Inhalt:
-
-```json
-{
-  "slideshow_interval": 30,
-  "transition": "fade",
-  "transition_duration": 1.5,
-  "order": "random",
-  "show_overlay": true,
-  "overlay_duration": 5,
-  "night_mode": {
-    "enabled": true,
-    "dim_start": "22:00",
-    "dim_end": "07:00",
-    "brightness": 0.1
-  },
-  "sync_interval": 5
-}
-```
-
-**Einstellungen erklaert:**
-
-| Einstellung | Beschreibung | Werte |
-|-------------|-------------|-------|
-| `slideshow_interval` | Sekunden pro Foto | 10-300 |
-| `transition` | Uebergangseffekt | `fade`, `slide`, `kenburns` |
-| `transition_duration` | Uebergangsdauer in Sekunden | 0.5-3.0 |
-| `order` | Reihenfolge der Fotos | `random`, `newest`, `chronological` |
-| `show_overlay` | Bildunterschrift anzeigen | `true` / `false` |
-| `overlay_duration` | Sekunden bis Einblendung verschwindet (0 = immer sichtbar) | 0-30 |
-| `night_mode.enabled` | Nachtmodus aktiviert | `true` / `false` |
-| `night_mode.dim_start` | Beginn der Abdunkelung | `"HH:MM"` |
-| `night_mode.dim_end` | Ende der Abdunkelung | `"HH:MM"` |
-| `night_mode.brightness` | Helligkeit im Nachtmodus (0=aus, 1=voll) | 0.0-1.0 |
-| `sync_interval` | Sync-Intervall in Minuten | 1-60 |
-
-> **Tipp**: Du kannst die Einstellungen jederzeit aendern, indem du die `settings.json` in OneDrive bearbeitest. Der Bilderrahmen uebernimmt die Aenderungen innerhalb von ~10 Minuten.
+- **Event-Ordner**: Familienmitglieder koennen optional eigene Unterordner erstellen (z.B. `/photos/Urlaub-Kroatien-2026/`). Diese Ordner erscheinen als eigene Ordner auf Omas Fernseher
+- **Personen-Ordner**: Der Raspberry Pi erstellt automatisch Ordner fuer erkannte Personen (z.B. `/Anna/`, `/Thomas/`) auf dem USB-Laufwerk — diese entstehen NICHT in OneDrive, sondern nur lokal auf dem RPi
+- **Fuer Oma macht es keinen Unterschied** — sie sieht alle Fotos aus allen Ordnern
 
 ---
 
@@ -116,9 +71,8 @@ Gleicher Ablauf — nur `/FamilyFrame/photos/` freigeben, NICHT den gesamten One
 
 ### Wichtig: Nur den photos-Ordner teilen!
 
-- Teile **nur** `/FamilyFrame/photos/`, nicht `/FamilyFrame/` und nicht `/FamilyFrame/config/`
-- So kann die Familie Fotos hochladen, aber nicht die Einstellungen aendern
-- Der `config/`-Ordner bleibt nur fuer den Admin zugaenglich
+- Teile **nur** `/FamilyFrame/photos/`, nicht den gesamten OneDrive
+- So kann die Familie nur Fotos hochladen und sieht keine anderen Dateien
 
 ---
 
@@ -142,23 +96,22 @@ Jedes Familienmitglied muss:
 
 ---
 
-## 5. Fotos mit Beschreibung hochladen
+## 5. Fotos hochladen
 
 ### In der OneDrive App:
-1. Foto hochladen
-2. Auf das hochgeladene Foto tippen → **Details** (i-Symbol)
-3. Im Feld **Beschreibung** die Bildunterschrift eingeben
-4. Die App uebernimmt die Beschreibung als Caption auf dem Bilderrahmen
+1. Gehe zu **Geteilt** → **FamilyFrame photos**
+2. Tippe auf **+** → **Hochladen** → **Fotos und Videos**
+3. Waehle die Fotos aus → **Fertig**
 
-### Per E-Mail (Phase 2):
-- **Betreff** → wird zur Bildunterschrift
-- **E-Mail-Text** → wird zur Beschreibung
-- **Anhang** → das Foto
+### Per OneDrive Web (Browser):
+1. Oeffne den Einladungslink im Browser
+2. Ziehe Fotos per **Drag & Drop** in den Ordner
+3. Oder klicke auf **Hochladen** → Fotos auswaehlen
 
-### Per OneDrive Web:
-1. Foto hochladen
-2. Rechtsklick → **Details**
-3. Beschreibung eingeben
+### Event-Ordner:
+Familienmitglieder koennen eigene Ordner fuer Anlaesse erstellen (z.B. "Weihnachten 2027"). Einfach in OneDrive einen neuen Unterordner anlegen und die Fotos dort hochladen. Der Ordner erscheint automatisch auf Omas Fernseher.
+
+> **Hinweis**: Bildunterschriften werden im aktuellen Setup (Samsung TV USB-Mediaplayer) nicht angezeigt. Der Fernseher zeigt nur die Fotos selbst. Bildunterschriften koennen in einem spaeteren Update direkt in die Fotos eingebrannt werden (Path B).
 
 ---
 

@@ -2,73 +2,20 @@
 
 **So laedt ihr Fotos auf Omas digitalen Bilderrahmen hoch.**
 
-Omas Bilderrahmen zeigt automatisch alle Fotos an, die ihr hochladet. Am einfachsten geht es per **WhatsApp** — ihr muesst nichts installieren und koennt sofort loslegen!
+Omas Fernseher zeigt automatisch alle Fotos an, die ihr hochladet. Einfach ein Foto in den geteilten OneDrive-Ordner laden — fertig! Die Fotos erscheinen innerhalb weniger Minuten auf dem Fernseher.
 
 ---
 
-## Weg 1: WhatsApp (empfohlen!)
+## So funktioniert es
 
-Am einfachsten — ein Foto schicken, fertig!
-
-### Einmalige Einrichtung (1 Minute)
-
-1. Speichere diese Nummer in deinem Telefon: **+49 XXX XXXXXXXX**
-   *(die genaue Nummer bekommst du von deinem Admin)*
-2. Speichere den Kontakt z.B. als **"Omas Bilderrahmen"**
-
-### Fotos hochladen
-
-1. Oeffne **WhatsApp**
-2. Schicke ein Foto an **"Omas Bilderrahmen"**
-3. Schreibe eine **Bildunterschrift** dazu (optional — wird auf dem Rahmen angezeigt)
-4. Fertig!
-
-> **Tipps**:
-> - Du kannst **mehrere Fotos auf einmal** schicken
-> - Die **Bildunterschrift** erscheint direkt auf dem Bilderrahmen unter dem Foto
-> - Dein **WhatsApp-Name** wird automatisch angezeigt, damit Oma weiss, von wem das Foto ist
-> - Fotos erscheinen innerhalb weniger Minuten auf dem Bilderrahmen
+1. Ihr ladet Fotos in einen **geteilten OneDrive-Ordner** hoch
+2. Ein kleiner Computer (Raspberry Pi) an Omas Fernseher laedt die Fotos automatisch herunter
+3. Oma sieht die Fotos auf ihrem Fernseher — ueber den **USB-Mediaplayer**, den sie schon kennt
+4. Fotos werden automatisch nach **Personen** sortiert (Gesichtserkennung)
 
 ---
 
-## Weg 2: Upload-Webseite
-
-Kein App, kein Account noetig — einfach einen Link oeffnen!
-
-1. Oeffne **deinen persoenlichen Link** im Browser
-   *(du bekommst ihn vom Admin, z.B. `https://familyframe.example.com/upload?user=Anna`)*
-2. Gib beim ersten Mal den **Familien-PIN** ein (wird danach gespeichert)
-3. Tippe auf **"Fotos auswaehlen"** oder ziehe Fotos in das Feld
-4. Gib eine **Bildunterschrift** ein (optional)
-5. Tippe auf **Hochladen**
-
-> **Tipp**: Speichere den Link als Lesezeichen auf deinem Handy — dann geht es beim naechsten Mal noch schneller. Dein Name ist im Link gespeichert, du musst ihn nicht jedes Mal eingeben.
-
-### Als App auf dem Handy installieren (optional)
-
-Du kannst die Upload-Seite wie eine richtige App auf deinem Handy installieren. Dann findest du sie direkt auf dem Startbildschirm.
-
-**Android:**
-1. Oeffne deinen persoenlichen Link in **Chrome**
-2. Tippe auf das **Drei-Punkte-Menue** (oben rechts)
-3. Waehle **"Zum Startbildschirm hinzufuegen"** oder **"App installieren"**
-4. Fertig! Du kannst jetzt Fotos direkt aus deiner Galerie ueber das **Teilen-Menue** an "FamilyFrame" senden
-
-**iPhone / iPad:**
-1. Oeffne deinen persoenlichen Link in **Safari** (wichtig: nicht Chrome!)
-2. Tippe auf das **Teilen-Symbol** (Quadrat mit Pfeil nach oben)
-3. Scrolle nach unten und tippe auf **"Zum Home-Bildschirm"**
-4. Tippe auf **"Hinzufuegen"**
-
-> **Hinweis Android**: Nach der Installation kannst du Fotos direkt aus der Galerie oder Kamera ueber das Teilen-Menue an FamilyFrame senden — wie bei WhatsApp!
->
-> **Hinweis iPhone**: Auf dem iPhone ist das Teilen aus der Galerie leider noch nicht moeglich. Oeffne stattdessen die FamilyFrame-App vom Startbildschirm und waehle dort deine Fotos aus.
-
----
-
-## Weg 3: OneDrive-App
-
-Fuer alle, die die OneDrive-App bereits nutzen.
+## Weg 1: OneDrive-App (empfohlen)
 
 ### Einmalige Einrichtung (5 Minuten)
 
@@ -90,52 +37,90 @@ Fuer alle, die die OneDrive-App bereits nutzen.
 3. Tippe auf **+** → **Hochladen** → **Fotos und Videos**
 4. Waehle die Fotos aus → **Fertig**
 
-> **Hinweis**: Bildunterschriften koennen ueber OneDrive leider nicht einfach hinzugefuegt werden. Nutze lieber WhatsApp oder die Upload-Webseite, wenn du eine Bildunterschrift hinzufuegen moechtest.
+> **Tipps**:
+> - Du kannst **mehrere Fotos auf einmal** hochladen
+> - **Querformat** sieht auf dem Fernseher besser aus als Hochformat
+> - Fotos erscheinen innerhalb von ~5 Minuten auf Omas Fernseher
 
 ---
 
-## Weg 4: E-Mail
+## Weg 2: Ueber den Webbrowser (kein App noetig)
 
-1. Schreibe eine E-Mail an: **`bilderrahmen@family-domain.de`**
-   *(die genaue Adresse bekommst du von deinem Admin)*
-2. **Betreff** = Bildunterschrift (z.B. "Urlaub an der Ostsee")
-3. **Foto(s) als Anhang** hinzufuegen
-4. Absenden!
+1. Oeffne den **Einladungslink** aus der E-Mail im Browser
+2. Ziehe Fotos per **Drag & Drop** in den Ordner
+3. Oder klicke auf **Hochladen** → Fotos auswaehlen
+
+> Das funktioniert auf jedem Geraet mit Browser — Handy, Tablet, Laptop.
+
+---
+
+## Event-Ordner erstellen
+
+Ihr koennt **eigene Ordner** fuer besondere Anlaesse erstellen:
+
+1. Oeffne den geteilten Ordner in OneDrive
+2. Erstelle einen neuen Ordner, z.B. **"Weihnachten 2027"** oder **"Urlaub Kroatien"**
+3. Lade die Fotos in diesen Ordner hoch
+
+Oma sieht den Ordner auf ihrem Fernseher und kann ihn mit der Fernbedienung oeffnen.
+
+---
+
+## Was Oma auf dem Fernseher sieht
+
+Oma oeffnet wie gewohnt den **USB-Mediaplayer** auf ihrem Samsung-Fernseher. Sie sieht folgende Ordner:
+
+```
+FAMILYFRAME (USB)
+├── Alle Fotos          ← alle Fotos von allen
+├── Anna                ← nur Fotos mit Anna
+├── Thomas              ← nur Fotos mit Thomas
+├── Maria               ← nur Fotos mit Maria
+├── Weihnachten 2027    ← euer Event-Ordner
+```
+
+- **Alle Fotos**: Zeigt alle Fotos als Diashow
+- **Personen-Ordner** (Anna, Thomas, ...): Automatisch erstellt durch Gesichtserkennung
+- **Event-Ordner**: Von euch in OneDrive erstellt
+
+Oma navigiert mit ihrer **normalen Fernbedienung** — sie muss nichts Neues lernen!
 
 ---
 
 ## Tipps
 
-- **WhatsApp ist am einfachsten** — Foto schicken, Bildunterschrift dazu, fertig
-- **Querformat** sieht auf dem Rahmen besser aus als Hochformat
-- **Standort**: Wenn eure Kamera den Standort speichert, wird er automatisch auf dem Bilderrahmen angezeigt (z.B. "Warnemuende, Rostock")
+- **Querformat** sieht auf dem Fernseher besser aus als Hochformat
 - **Jederzeit hochladen**: Es gibt keinen falschen Zeitpunkt. Oma sieht neue Fotos automatisch
-- **Neue Fotos** werden auf dem Bilderrahmen mit "Neu" markiert und oefter angezeigt
+- **Event-Ordner** helfen Oma, bestimmte Anlaesse wiederzufinden
+- **Kein WLAN?** Kein Problem — alle bereits heruntergeladenen Fotos bleiben auf dem Fernseher
 
 ---
 
 ## Haeufige Fragen
 
-**Welchen Weg soll ich nutzen?**
-Am einfachsten: **WhatsApp**. Foto schicken, fertig. Wenn du eine laengere Beschreibung oder viele Fotos auf einmal hochladen moechtest, nutze die Upload-Webseite.
+**Wie schnell sieht Oma meine Fotos?**
+Innerhalb von ~5 Minuten. Der Raspberry Pi prueft alle 5 Minuten auf neue Fotos.
 
 **Sieht die Familie meine anderen OneDrive-Dateien?**
 Nein. Ihr seht nur den geteilten Foto-Ordner. Nichts anderes.
 
 **Kann ich Fotos wieder loeschen?**
-Ja. Melde dich beim Admin — er kann Fotos ueber die Verwaltungsoberflaeche entfernen.
+Ja. Loesche das Foto einfach aus dem geteilten OneDrive-Ordner. Beim naechsten Sync wird es auch vom Fernseher entfernt.
 
 **Wie viele Fotos kann ich hochladen?**
 Sehr viele! Der Speicher reicht fuer tausende Fotos.
 
 **Muss Oma etwas tun?**
-Nein! Der Bilderrahmen zeigt die Fotos automatisch an. Oma muss nichts machen.
+Nein! Oma oeffnet einfach den USB-Mediaplayer wie immer. Neue Fotos erscheinen automatisch.
 
 **Was passiert wenn Omas WLAN ausfaellt?**
-Der Bilderrahmen zeigt weiterhin alle bereits geladenen Fotos an. Neue Fotos erscheinen, sobald das WLAN wieder da ist.
+Alle bereits heruntergeladenen Fotos bleiben verfuegbar. Neue Fotos erscheinen, sobald das WLAN wieder da ist.
 
 **Kann Oma Fotos von einer bestimmten Person sehen?**
-Ja! Wenn Oma den Bildschirm doppelt antippt, erscheinen Namen. Sie kann einen Namen antippen, um nur Fotos von dieser Person zu sehen. Nach 30 Minuten wechselt der Rahmen automatisch wieder zu allen Fotos.
+Ja! Oma oeffnet einfach den Ordner mit dem Namen der Person (z.B. "Anna"). Die Gesichtserkennung sortiert automatisch.
+
+**Woher weiss der Bilderrahmen, wer auf dem Foto ist?**
+Eine Gesichtserkennung (Azure Face API) identifiziert automatisch die Personen. Der Admin hat vorher Beispielfotos von jedem Familienmitglied hochgeladen.
 
 ---
 
